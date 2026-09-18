@@ -18,6 +18,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Disable Swift Package Manager (avoid SPM/CocoaPods hybrid resolution bugs)
+        run: flutter config --no-enable-swift-package-manager
+
       - name: Build unsigned iOS app
         run: flutter build ios --release --no-codesign
 
