@@ -1,0 +1,1498 @@
+[
+  {
+    "id": "promos-star-trek-ccg-1e",
+    "name": "Promos",
+    "page_title": "Promos (Star Trek CCG 1E)",
+    "category": "physical",
+    "order": 1,
+    "date": "2000-2002",
+    "card_count_hint": "25",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/1/15/Promo.png/revision/latest?cb=20120312122450"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Promos_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "physical-errata-cards-star-trek-ccg-1e",
+    "name": "Physical Errata Cards",
+    "page_title": "Physical Errata Cards (Star Trek CCG 1E)",
+    "category": "physical",
+    "order": 2,
+    "date": "2003-present",
+    "card_count_hint": "499",
+    "block": null,
+    "border_color": "black",
+    "icon_urls": [],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Physical_Errata_Cards_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "oversized-promos-star-trek-ccg-1e",
+    "name": "Oversized Promos",
+    "page_title": "Oversized Promos (Star Trek CCG 1E)",
+    "category": "physical",
+    "order": 3,
+    "date": "1997-2002",
+    "card_count_hint": "4",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Oversized_Promos_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "premiere-limited-star-trek-ccg-1e",
+    "name": "Premiere Limited",
+    "page_title": "Premiere Limited (Star Trek CCG 1E)",
+    "category": "physical",
+    "order": 4,
+    "date": "1994, November 10",
+    "card_count_hint": "363",
+    "block": null,
+    "border_color": "black",
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/f/fd/Premiere.png/revision/latest?cb=20120310194505"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Premiere_Limited_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "premiere-unlimited-94",
+    "name": "Premiere Unlimited '94",
+    "page_title": "Premiere Unlimited '94",
+    "category": "physical",
+    "order": 5,
+    "date": "1994, December 12",
+    "card_count_hint": "363",
+    "block": null,
+    "border_color": "white",
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/f/fd/Premiere.png/revision/latest?cb=20120310194505"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Premiere_Unlimited_'94"
+  },
+  {
+    "id": "warp-pack-expansion",
+    "name": "Warp Pack",
+    "page_title": "Warp Pack (expansion)",
+    "category": "physical",
+    "order": 6,
+    "date": "1995, May",
+    "card_count_hint": "12",
+    "block": null,
+    "border_color": "white",
+    "icon_urls": [],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Warp_Pack_(expansion)"
+  },
+  {
+    "id": "premiere-unlimited-95",
+    "name": "Premiere Unlimited '95",
+    "page_title": "Premiere Unlimited '95",
+    "category": "physical",
+    "order": 7,
+    "date": "1995, June",
+    "card_count_hint": "363",
+    "block": null,
+    "border_color": "white",
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/f/fd/Premiere.png/revision/latest?cb=20120310194505"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Premiere_Unlimited_'95"
+  },
+  {
+    "id": "collector-s-tin",
+    "name": "Collector's Tin",
+    "page_title": "Collector's Tin",
+    "category": "physical",
+    "order": 8,
+    "date": "1995, October 18",
+    "card_count_hint": "363",
+    "block": null,
+    "border_color": "silver",
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/f/fd/Premiere.png/revision/latest?cb=20120310194505"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Collector's_Tin"
+  },
+  {
+    "id": "alternate-universe",
+    "name": "Alternate Universe",
+    "page_title": "Alternate Universe",
+    "category": "physical",
+    "order": 9,
+    "date": "1995, November 1",
+    "card_count_hint": "122",
+    "block": null,
+    "border_color": "black",
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/3/3e/Alternateuniverse.png/revision/latest?cb=20120312180228"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Alternate_Universe"
+  },
+  {
+    "id": "q-continuum",
+    "name": "Q-Continuum",
+    "page_title": "Q-Continuum",
+    "category": "physical",
+    "order": 10,
+    "date": "1996, October 1",
+    "card_count_hint": "122",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/3/30/Qcontinuum.png/revision/latest?cb=20120312180501"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Q-Continuum"
+  },
+  {
+    "id": "introductory-two-player-game",
+    "name": "Introductory Two-Player Game",
+    "page_title": "Introductory Two-Player Game",
+    "category": "physical",
+    "order": 11,
+    "date": "1997, January 1",
+    "card_count_hint": "29",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/e/e0/Introductorytwoplayergame.png/revision/latest?cb=20120312180649"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Introductory_Two-Player_Game"
+  },
+  {
+    "id": "first-anthology-star-trek-ccg-1e",
+    "name": "First Anthology",
+    "page_title": "First Anthology (Star Trek CCG 1E)",
+    "category": "physical",
+    "order": 12,
+    "date": "1997, June 1",
+    "card_count_hint": "6",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/6/6d/Firstanthology.png/revision/latest?cb=20120312181031"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/First_Anthology_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "the-fajo-collection",
+    "name": "The Fajo Collection",
+    "page_title": "The Fajo Collection",
+    "category": "physical",
+    "order": 13,
+    "date": "1997, December 1",
+    "card_count_hint": "18",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/a/ad/Fajocollection.png/revision/latest?cb=20120312181424"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Fajo_Collection"
+  },
+  {
+    "id": "first-contact-expansion",
+    "name": "First Contact",
+    "page_title": "First Contact (expansion)",
+    "category": "physical",
+    "order": 14,
+    "date": "1997, December 1",
+    "card_count_hint": "130",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/4/40/Firstcontact.png/revision/latest?cb=20120312181440"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/First_Contact_(expansion)"
+  },
+  {
+    "id": "away-team-pack",
+    "name": "Away Team Pack",
+    "page_title": "Away Team Pack",
+    "category": "physical",
+    "order": 15,
+    "date": "1998, May 1",
+    "card_count_hint": "2",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/1/15/Promo.png/revision/latest?cb=20120312122450",
+      "https://static.wikia.nocookie.net/cardguide/images/0/06/Awayteampack.png/revision/latest?cb=20120312181609"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Away_Team_Pack"
+  },
+  {
+    "id": "official-tournament-sealed-deck-star-trek-ccg-1e",
+    "name": "Official Tournament Sealed Deck",
+    "page_title": "Official Tournament Sealed Deck (Star Trek CCG 1E)",
+    "category": "physical",
+    "order": 16,
+    "date": "1998, May 1",
+    "card_count_hint": "20",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/a/ab/Officialtournamentsealeddeck.png/revision/latest?cb=20120312182016"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Official_Tournament_Sealed_Deck_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "deep-space-nine",
+    "name": "Deep Space Nine",
+    "page_title": "Deep Space Nine",
+    "category": "physical",
+    "order": 17,
+    "date": "1998, July 1",
+    "card_count_hint": "277",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/5/5a/Deepspacenine.png/revision/latest?cb=20120312183016"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Deep_Space_Nine"
+  },
+  {
+    "id": "starter-deck-ii",
+    "name": "Starter Deck II",
+    "page_title": "Starter Deck II",
+    "category": "physical",
+    "order": 18,
+    "date": "1998, December 16",
+    "card_count_hint": "8",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/7/72/Starterdeck2.png/revision/latest?cb=20120312184731"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Starter_Deck_II"
+  },
+  {
+    "id": "starter-deck-ii-reprint",
+    "name": "Starter Deck II Reprint",
+    "page_title": "Starter Deck II (expansion)",
+    "category": "physical",
+    "order": 19,
+    "date": "2000, March 15",
+    "card_count_hint": "8",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/7/72/Starterdeck2.png/revision/latest?cb=20120312184731"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Starter_Deck_II_(expansion)#Reprints"
+  },
+  {
+    "id": "the-dominion",
+    "name": "The Dominion",
+    "page_title": "The Dominion",
+    "category": "physical",
+    "order": 20,
+    "date": "1999, January 1",
+    "card_count_hint": "134",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/3/37/Thedominion.png/revision/latest?cb=20120312190850"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Dominion"
+  },
+  {
+    "id": "enhanced-first-contact",
+    "name": "Enhanced First Contact",
+    "page_title": "Enhanced First Contact",
+    "category": "physical",
+    "order": 21,
+    "date": "1999, January 13",
+    "card_count_hint": "12",
+    "block": null,
+    "border_color": "black",
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/0/03/Enhancedfirstcontact.png/revision/latest?cb=20120312192405"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Enhanced_First_Contact"
+  },
+  {
+    "id": "blaze-of-glory-expansion",
+    "name": "Blaze of Glory",
+    "page_title": "Blaze of Glory (expansion)",
+    "category": "physical",
+    "order": 22,
+    "date": "1999, August 18",
+    "card_count_hint": "130",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/2/28/Blazeofglory.png/revision/latest?cb=20120312192537"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Blaze_of_Glory_(expansion)"
+  },
+  {
+    "id": "blaze-of-glory-foil-cards",
+    "name": "Blaze of Glory Foil Cards",
+    "page_title": "Blaze of Glory (expansion)",
+    "category": "physical",
+    "order": 23,
+    "date": "1999, August 18",
+    "card_count_hint": "18",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/2/28/Blazeofglory.png/revision/latest?cb=20120312192537"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Blaze_of_Glory_(expansion)#Foil_Set"
+  },
+  {
+    "id": "rules-of-acquisition",
+    "name": "Rules of Acquisition",
+    "page_title": "Rules of Acquisition",
+    "category": "physical",
+    "order": 24,
+    "date": "1999, December 1",
+    "card_count_hint": "130",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/3/32/Rulesofacquisition.png/revision/latest?cb=20120312192639"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Rules_of_Acquisition"
+  },
+  {
+    "id": "armada",
+    "name": "Armada",
+    "page_title": "Armada",
+    "category": "physical",
+    "order": 25,
+    "date": "2000, February 29",
+    "card_count_hint": "1",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/1/15/Promo.png/revision/latest?cb=20120312122450",
+      "https://static.wikia.nocookie.net/cardguide/images/b/b9/Armada.png/revision/latest?cb=20120312192809"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Armada"
+  },
+  {
+    "id": "second-anthology-star-trek-ccg-1e",
+    "name": "Second Anthology",
+    "page_title": "Second Anthology (Star Trek CCG 1E)",
+    "category": "physical",
+    "order": 26,
+    "date": "2000, March 1",
+    "card_count_hint": "6",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/1/15/Promo.png/revision/latest?cb=20120312122450",
+      "https://static.wikia.nocookie.net/cardguide/images/0/05/Secondanthology.png/revision/latest?cb=20120312192906"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Second_Anthology_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "the-trouble-with-tribbles-expansion",
+    "name": "The Trouble With Tribbles",
+    "page_title": "The Trouble With Tribbles (expansion)",
+    "category": "physical",
+    "order": 27,
+    "date": "2000, August 9",
+    "card_count_hint": "141+96",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/1/1f/Troublewithtribbles.png/revision/latest?cb=20120312193114"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Trouble_With_Tribbles_(expansion)"
+  },
+  {
+    "id": "reflections-star-trek-ccg",
+    "name": "Reflections",
+    "page_title": "Reflections (Star Trek CCG)",
+    "category": "physical",
+    "order": 28,
+    "date": "2000, October 18",
+    "card_count_hint": "105",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/5/59/Reflections.png/revision/latest?cb=20120312201305"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Reflections_(Star_Trek_CCG)"
+  },
+  {
+    "id": "enhanced-premiere-star-trek-ccg-1e",
+    "name": "Enhanced Premiere",
+    "page_title": "Enhanced Premiere (Star Trek CCG 1E)",
+    "category": "physical",
+    "order": 29,
+    "date": "2000, November 1",
+    "card_count_hint": "21",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/c/c8/Enhancedpremiere.png/revision/latest?cb=20120312201420"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Enhanced_Premiere_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "mirror-mirror",
+    "name": "Mirror, Mirror",
+    "page_title": "Mirror, Mirror",
+    "category": "physical",
+    "order": 30,
+    "date": "2000, December 1",
+    "card_count_hint": "131",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/c/ca/Mirrormirror.png/revision/latest?cb=20120312201707"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Mirror,_Mirror"
+  },
+  {
+    "id": "voyager-expansion",
+    "name": "Voyager",
+    "page_title": "Voyager (expansion)",
+    "category": "physical",
+    "order": 31,
+    "date": "2001, May 23",
+    "card_count_hint": "218",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/2/2f/Voyager.png/revision/latest?cb=20120312201906"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Voyager_(expansion)"
+  },
+  {
+    "id": "the-borg",
+    "name": "The Borg",
+    "page_title": "The Borg",
+    "category": "physical",
+    "order": 32,
+    "date": "2001, September 19",
+    "card_count_hint": "143",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/6/6f/Theborg.png/revision/latest?cb=20120312204345"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Borg"
+  },
+  {
+    "id": "holodeck-adventures",
+    "name": "Holodeck Adventures",
+    "page_title": "Holodeck Adventures",
+    "category": "physical",
+    "order": 33,
+    "date": "2001, December 21",
+    "card_count_hint": "142",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/a/a2/Holodeckadventures.png/revision/latest?cb=20120312204715"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Holodeck_Adventures"
+  },
+  {
+    "id": "the-motion-pictures",
+    "name": "The Motion Pictures",
+    "page_title": "The Motion Pictures",
+    "category": "physical",
+    "order": 34,
+    "date": "2002, April 17",
+    "card_count_hint": "134",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/6/64/Themotionpictures.png/revision/latest?cb=20120312205133"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Motion_Pictures"
+  },
+  {
+    "id": "all-good-things",
+    "name": "All Good Things",
+    "page_title": "All Good Things",
+    "category": "physical",
+    "order": 35,
+    "date": "2003, July 16",
+    "card_count_hint": "41",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/9/98/Allgoodthings.png/revision/latest?cb=20120312210322"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/All_Good_Things"
+  },
+  {
+    "id": "enterprise-collection-expansion",
+    "name": "Enterprise Collection",
+    "page_title": "Enterprise Collection (expansion)",
+    "category": "physical",
+    "order": 36,
+    "date": "2006, July 7",
+    "card_count_hint": "18",
+    "block": null,
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/1/15/Promo.png/revision/latest?cb=20120312122450",
+      "https://static.wikia.nocookie.net/cardguide/images/6/60/Enterprisecollection.png/revision/latest?cb=20120312211426"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Enterprise_Collection_(expansion)"
+  },
+  {
+    "id": "virtual-promos-star-trek-ccg-1e",
+    "name": "Virtual Promos",
+    "page_title": "Virtual Promos (Star Trek CCG 1E)",
+    "category": "virtual",
+    "order": 1,
+    "date": "2009 - present",
+    "card_count_hint": "398",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/5/55/Virtualpromos.png/revision/latest?cb=20120312212857"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Virtual_Promos_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "virtual-errata-cards-star-trek-ccg-1e",
+    "name": "Virtual Errata Cards",
+    "page_title": "Virtual Errata Cards (Star Trek CCG 1E)",
+    "category": "virtual",
+    "order": 2,
+    "date": "2009 - present",
+    "card_count_hint": "209",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Virtual_Errata_Cards_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "referee-reprints",
+    "name": "Referee Reprints",
+    "page_title": "Referee Reprints",
+    "category": "virtual",
+    "order": 3,
+    "date": "2008, November 19",
+    "card_count_hint": "29",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/b/bc/Refereereprints.png/revision/latest?cb=20120312211857"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Referee_Reprints"
+  },
+  {
+    "id": "identity-crisis",
+    "name": "Identity Crisis",
+    "page_title": "Identity Crisis",
+    "category": "virtual",
+    "order": 4,
+    "date": "2009, January 5",
+    "card_count_hint": "25",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/7/7f/Identitycrisis.png/revision/latest?cb=20120312212618"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Identity_Crisis"
+  },
+  {
+    "id": "chain-of-command",
+    "name": "Chain of Command",
+    "page_title": "Chain of Command",
+    "category": "virtual",
+    "order": 5,
+    "date": "2009, November 6",
+    "card_count_hint": "15",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/d/db/Chainofcommand.png/revision/latest?cb=20120312213236"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Chain_of_Command"
+  },
+  {
+    "id": "life-from-lifelessness",
+    "name": "Life From Lifelessness",
+    "page_title": "Life From Lifelessness",
+    "category": "virtual",
+    "order": 6,
+    "date": "2010, June 11",
+    "card_count_hint": "54",
+    "block": "Life from Lifelessness Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/2/23/Lifefromlifelessness.png/revision/latest?cb=20120312213510"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Life_From_Lifelessness"
+  },
+  {
+    "id": "homefront",
+    "name": "Homefront",
+    "page_title": "Homefront",
+    "category": "virtual",
+    "order": 7,
+    "date": "2010, August 6",
+    "card_count_hint": "36",
+    "block": "Core Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/d/d2/Homefront.png/revision/latest?cb=20120312213947"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Homefront"
+  },
+  {
+    "id": "straight-and-steady-expansion",
+    "name": "Straight and Steady",
+    "page_title": "Straight and Steady (expansion)",
+    "category": "virtual",
+    "order": 8,
+    "date": "2010, October 22",
+    "card_count_hint": "57",
+    "block": "Life from Lifelessness Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/9/9e/Straightandsteady.png/revision/latest?cb=20120312214424"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Straight_and_Steady_(expansion)"
+  },
+  {
+    "id": "living-witness-star-trek-ccg-1e",
+    "name": "Living Witness",
+    "page_title": "Living Witness (Star Trek CCG 1E)",
+    "category": "virtual",
+    "order": 9,
+    "date": "2011, April 1",
+    "card_count_hint": "2",
+    "block": "April's Fools",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/5/55/Virtualpromos.png/revision/latest?cb=20120312212857"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Living_Witness_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "bah-expansion",
+    "name": "BaH!",
+    "page_title": "BaH! (expansion)",
+    "category": "virtual",
+    "order": 10,
+    "date": "2011, April 1",
+    "card_count_hint": "36",
+    "block": "Life from Lifelessness Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/e/eb/Bah.png/revision/latest?cb=20120312214922"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/BaH!_(expansion)"
+  },
+  {
+    "id": "shades-of-gray-expansion",
+    "name": "Shades of Gray",
+    "page_title": "Shades of Gray (expansion)",
+    "category": "virtual",
+    "order": 11,
+    "date": "2011, April 15",
+    "card_count_hint": "55",
+    "block": "Life from Lifelessness Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/9/94/Shadesofgray.png/revision/latest?cb=20120312215714"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Shades_of_Gray_(expansion)"
+  },
+  {
+    "id": "homefront-ii",
+    "name": "Homefront II",
+    "page_title": "Homefront II",
+    "category": "virtual",
+    "order": 12,
+    "date": "2011, August 6",
+    "card_count_hint": "54",
+    "block": "Core Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/9/9c/Homefront2.png/revision/latest?cb=20120312215809"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Homefront_II"
+  },
+  {
+    "id": "resistance-is-futile",
+    "name": "Resistance Is Futile",
+    "page_title": "Resistance Is Futile",
+    "category": "virtual",
+    "order": 13,
+    "date": "2011, November 22",
+    "card_count_hint": "18",
+    "block": "Life from Lifelessness Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/3/32/Resistanceisfutile.png/revision/latest?cb=20120312215910"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Resistance_Is_Futile"
+  },
+  {
+    "id": "the-next-generation",
+    "name": "The Next Generation",
+    "page_title": "The Next Generation",
+    "category": "virtual",
+    "order": 14,
+    "date": "2012, April 13",
+    "card_count_hint": "102",
+    "block": "The Next Generation Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/3/33/Thenextgeneration.png/revision/latest?cb=20120329161435"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Next_Generation"
+  },
+  {
+    "id": "the-next-generation-supplemental",
+    "name": "The Next Generation: Supplemental",
+    "page_title": "The Next Generation: Supplemental",
+    "category": "virtual",
+    "order": 15,
+    "date": "2012, April 13",
+    "card_count_hint": "45",
+    "block": "The Next Generation Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/e/eb/Thenextgenerationsupplemental.png/revision/latest?cb=20120407141532"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Next_Generation:_Supplemental"
+  },
+  {
+    "id": "homefront-iii",
+    "name": "Homefront III",
+    "page_title": "Homefront III",
+    "category": "virtual",
+    "order": 16,
+    "date": "2012, September 7",
+    "card_count_hint": "36",
+    "block": "Core Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/9/9f/Homefront3.png/revision/latest?cb=20120907074632"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Homefront_III"
+  },
+  {
+    "id": "engage",
+    "name": "Engage",
+    "page_title": "Engage",
+    "category": "virtual",
+    "order": 17,
+    "date": "2012, November 2",
+    "card_count_hint": "54",
+    "block": "The Next Generation Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/a/a4/Engage.png/revision/latest?cb=20121102175340"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Engage"
+  },
+  {
+    "id": "the-sky-s-the-limit",
+    "name": "The Sky's the Limit",
+    "page_title": "The Sky's the Limit",
+    "category": "virtual",
+    "order": 18,
+    "date": "2013, April 26",
+    "card_count_hint": "55",
+    "block": "The Next Generation Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/a/ac/Theskysthelimit_icon.png/revision/latest?cb=20130407143728"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Sky's_the_Limit"
+  },
+  {
+    "id": "homefront-iv",
+    "name": "Homefront IV",
+    "page_title": "Homefront IV",
+    "category": "virtual",
+    "order": 20,
+    "date": "2013, August 16",
+    "card_count_hint": "27",
+    "block": "Core Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/f/f7/Homefront4.png/revision/latest?cb=20130812223958"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Homefront_IV"
+  },
+  {
+    "id": "emissary",
+    "name": "Emissary",
+    "page_title": "Emissary",
+    "category": "virtual",
+    "order": 21,
+    "date": "2013, December 6",
+    "card_count_hint": "85",
+    "block": "Deep Space Nine Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/b/bc/Emissary.png/revision/latest?cb=20131221100149"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Emissary"
+  },
+  {
+    "id": "emissary-supplemental",
+    "name": "Emissary: Supplemental",
+    "page_title": "Emissary: Supplemental",
+    "category": "virtual",
+    "order": 22,
+    "date": "2013, December 6",
+    "card_count_hint": "80",
+    "block": "Deep Space Nine Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/e/e2/Emissarysupplemental.png/revision/latest?cb=20131221100229"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Emissary:_Supplemental"
+  },
+  {
+    "id": "homefront-v",
+    "name": "Homefront V",
+    "page_title": "Homefront V",
+    "category": "virtual",
+    "order": 24,
+    "date": "2013, December 6",
+    "card_count_hint": "18",
+    "block": "Core Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/5/52/Homefront5.png/revision/latest?cb=20131221100307"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Homefront_V"
+  },
+  {
+    "id": "warp-pack-emissary",
+    "name": "Warp Pack: Emissary",
+    "page_title": "Warp Pack: Emissary",
+    "category": "virtual",
+    "order": 25,
+    "date": "2014, April 11",
+    "card_count_hint": "6",
+    "block": "Deep Space Nine Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/e/ec/STCCG_1E_icon_premium.jpg/revision/latest?cb=20170619111909"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Warp_Pack:_Emissary"
+  },
+  {
+    "id": "the-maquis",
+    "name": "The Maquis",
+    "page_title": "The Maquis",
+    "category": "virtual",
+    "order": 26,
+    "date": "2014, June 27",
+    "card_count_hint": "60",
+    "block": "Deep Space Nine Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/d/d1/The_Maquis.jpeg/revision/latest?cb=20140701231500"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Maquis"
+  },
+  {
+    "id": "20th-anniversary-collection-star-trek-ccg-1e",
+    "name": "20th Anniversary Collection",
+    "page_title": "20th Anniversary Collection (Star Trek CCG 1E)",
+    "category": "virtual",
+    "order": 27,
+    "date": "2014, November 28",
+    "card_count_hint": "19",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/0/06/20thanniversarycollection.jpg/revision/latest?cb=20141206083117"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/20th_Anniversary_Collection_(Star_Trek_CCG_1E)"
+  },
+  {
+    "id": "the-gamma-quadrant",
+    "name": "The Gamma Quadrant",
+    "page_title": "The Gamma Quadrant",
+    "category": "virtual",
+    "order": 28,
+    "date": "2015, January 30",
+    "card_count_hint": "56",
+    "block": "Deep Space Nine Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/c/c0/Thegammaquadrant.jpg/revision/latest?cb=20150216142322"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Gamma_Quadrant"
+  },
+  {
+    "id": "homefront-vi",
+    "name": "Homefront VI",
+    "page_title": "Homefront VI",
+    "category": "virtual",
+    "order": 29,
+    "date": "2015, May 29",
+    "card_count_hint": "48",
+    "block": "Core Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/4/45/Homefront6.jpg/revision/latest?cb=20150529162141"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Homefront_VI"
+  },
+  {
+    "id": "crossover-expansion",
+    "name": "Crossover",
+    "page_title": "Crossover (expansion)",
+    "category": "virtual",
+    "order": 30,
+    "date": "2015, September 25",
+    "card_count_hint": "80",
+    "block": "Mirror Universe Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/3/38/Crossover.jpeg/revision/latest?cb=20150911111506"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Crossover_(expansion)"
+  },
+  {
+    "id": "crossover-supplemental",
+    "name": "Crossover: Supplemental",
+    "page_title": "Crossover: Supplemental",
+    "category": "virtual",
+    "order": 31,
+    "date": "2015, September 25",
+    "card_count_hint": "80",
+    "block": "Mirror Universe Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/d/d1/Crossoversupplemental.jpg/revision/latest?cb=20150916152230"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Crossover:_Supplemental"
+  },
+  {
+    "id": "through-the-looking-glass",
+    "name": "Through the Looking Glass",
+    "page_title": "Through the Looking Glass",
+    "category": "virtual",
+    "order": 32,
+    "date": "2016, March 25",
+    "card_count_hint": "54",
+    "block": "Mirror Universe Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/8/8e/Throughthelookingglass.png/revision/latest?cb=20160326122110"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Through_the_Looking_Glass"
+  },
+  {
+    "id": "star-trek-50-first-edition",
+    "name": "Star Trek 50: First Edition",
+    "page_title": "Star Trek 50: First Edition",
+    "category": "virtual",
+    "order": 33,
+    "date": "2016, September 30",
+    "card_count_hint": "18",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/7/72/Startrek50icon.jpeg/revision/latest?cb=20160916104619"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Star_Trek_50:_First_Edition"
+  },
+  {
+    "id": "the-terran-empire",
+    "name": "The Terran Empire",
+    "page_title": "The Terran Empire",
+    "category": "virtual",
+    "order": 34,
+    "date": "2016, November 25",
+    "card_count_hint": "62",
+    "block": "Mirror Universe Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/c/cb/Theterranempire.jpeg/revision/latest?cb=20161120131443"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Terran_Empire"
+  },
+  {
+    "id": "broken-bow",
+    "name": "Broken Bow",
+    "page_title": "Broken Bow",
+    "category": "virtual",
+    "order": 35,
+    "date": "2017, March 31",
+    "card_count_hint": "90",
+    "block": "Enterprise Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/f/f7/Brokenbow.jpeg/revision/latest?cb=20170331122800"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Broken_Bow"
+  },
+  {
+    "id": "pre-warp-pack",
+    "name": "Pre-Warp Pack",
+    "page_title": "Pre-Warp Pack",
+    "category": "virtual",
+    "order": 36,
+    "date": "2017, June 23",
+    "card_count_hint": "18",
+    "block": "Enterprise Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/e/ec/STCCG_1E_icon_premium.jpg/revision/latest?cb=20170619111909"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Pre-Warp_Pack"
+  },
+  {
+    "id": "live-long-and-prosper-expansion",
+    "name": "Live Long and Prosper",
+    "page_title": "Live Long and Prosper (expansion)",
+    "category": "virtual",
+    "order": 37,
+    "date": "2017, September 1",
+    "card_count_hint": "66",
+    "block": "Enterprise Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/a/ab/Livelongandprospericon.jpeg/revision/latest?cb=20170819153229"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Live_Long_and_Prosper_(expansion)"
+  },
+  {
+    "id": "warp-pack-holiday-2017",
+    "name": "Warp Pack: Holiday 2017",
+    "page_title": "Warp Pack: Holiday 2017",
+    "category": "virtual",
+    "order": 38,
+    "date": "2017, December 1",
+    "card_count_hint": "10",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/e/ec/STCCG_1E_icon_premium.jpg/revision/latest?cb=20170619111909"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Warp_Pack:_Holiday_2017"
+  },
+  {
+    "id": "cold-front-expansion",
+    "name": "Cold Front",
+    "page_title": "Cold Front (expansion)",
+    "category": "virtual",
+    "order": 39,
+    "date": "2018, January 12",
+    "card_count_hint": "56",
+    "block": "Enterprise Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/3/30/Coldfronticon.jpeg/revision/latest?cb=20171224140525"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Cold_Front_(expansion)"
+  },
+  {
+    "id": "metamorphosis-expansion",
+    "name": "Metamorphosis",
+    "page_title": "Metamorphosis (expansion)",
+    "category": "virtual",
+    "order": 40,
+    "date": "2018, May 4",
+    "card_count_hint": "65",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/6/6e/Metamorphosisicon.jpeg/revision/latest?cb=20180405121021"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Metamorphosis_(expansion)"
+  },
+  {
+    "id": "coming-of-age-expansion",
+    "name": "Coming of Age",
+    "page_title": "Coming of Age (expansion)",
+    "category": "virtual",
+    "order": 41,
+    "date": "2018, June 29",
+    "card_count_hint": "29",
+    "block": "The Next Generation Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/2/2a/Comingofageicon.jpeg/revision/latest?cb=20180629093620"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Coming_of_Age_(expansion)"
+  },
+  {
+    "id": "enterprise-collection-remastered-expansion",
+    "name": "Enterprise Collection Remastered",
+    "page_title": "Enterprise Collection Remastered (expansion)",
+    "category": "virtual",
+    "order": 42,
+    "date": "2018, October 26",
+    "card_count_hint": "18",
+    "block": "Enterprise Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/1/1f/Enterprisecollectionremasteredseticon.jpeg/revision/latest?cb=20181026113908"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Enterprise_Collection_Remastered_(expansion)"
+  },
+  {
+    "id": "the-gift-expansion",
+    "name": "The Gift",
+    "page_title": "The Gift (expansion)",
+    "category": "virtual",
+    "order": 43,
+    "date": "2018, November 9",
+    "card_count_hint": "10",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/9/98/Thegiftseticon.jpg/revision/latest?cb=20181109120634"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Gift_(expansion)"
+  },
+  {
+    "id": "equilibrium-expansion",
+    "name": "Equilibrium",
+    "page_title": "Equilibrium (expansion)",
+    "category": "virtual",
+    "order": 44,
+    "date": "2018, December 28",
+    "card_count_hint": "11",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/d/dd/Equilibrium_icon.jpg/revision/latest?cb=20181226135436"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Equilibrium_(expansion)"
+  },
+  {
+    "id": "the-cage-expansion",
+    "name": "The Cage",
+    "page_title": "The Cage (expansion)",
+    "category": "virtual",
+    "order": 45,
+    "date": "2019, June 21",
+    "card_count_hint": "63",
+    "block": "The Original Series Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/a/ab/Thecageicon.jpeg/revision/latest?cb=20190607112512"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Cage_(expansion)"
+  },
+  {
+    "id": "q-who-expansion",
+    "name": "Q Who?",
+    "page_title": "Q Who? (expansion)",
+    "category": "virtual",
+    "order": 46,
+    "date": "2020, January 17",
+    "card_count_hint": "18",
+    "block": "The Next Generation Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/b/bd/Qwhoseticon.jpeg/revision/latest?cb=20200117125250"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Q_Who?_(expansion)"
+  },
+  {
+    "id": "the-neutral-zone-expansion",
+    "name": "The Neutral Zone",
+    "page_title": "The Neutral Zone (expansion)",
+    "category": "virtual",
+    "order": 47,
+    "date": "2020, April 3",
+    "card_count_hint": "55",
+    "block": "The Original Series Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/d/d4/Theneutralzoneseticon.jpeg/revision/latest?cb=20200403114609"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Neutral_Zone_(expansion)"
+  },
+  {
+    "id": "a-private-little-war-expansion",
+    "name": "A Private Little War",
+    "page_title": "A Private Little War (expansion)",
+    "category": "virtual",
+    "order": 48,
+    "date": "2020, October 16",
+    "card_count_hint": "68",
+    "block": "The Original Series Block",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/f/fe/Aprivatelittlewarseticon.jpeg/revision/latest?cb=20200927203921"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/A_Private_Little_War_(expansion)"
+  },
+  {
+    "id": "dogs-of-war-expansion",
+    "name": "Dogs of War",
+    "page_title": "Dogs of War (expansion)",
+    "category": "virtual",
+    "order": 49,
+    "date": "2021, March 26",
+    "card_count_hint": "58",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/b/bc/Dogsofwarseticon.jpg/revision/latest?cb=20210325221224"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Dogs_of_War_(expansion)"
+  },
+  {
+    "id": "official-tournament-sealed-deck-remastered-expansion",
+    "name": "Official Tournament Sealed Deck Remastered",
+    "page_title": "Official Tournament Sealed Deck Remastered (expansion)",
+    "category": "virtual",
+    "order": 50,
+    "date": "2021, July 5",
+    "card_count_hint": "20",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/0/05/OTSDR_Set_icon.jpg/revision/latest?cb=20210628144355"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Official_Tournament_Sealed_Deck_Remastered_(expansion)"
+  },
+  {
+    "id": "the-trial-never-ended-expansion",
+    "name": "The Trial Never Ended",
+    "page_title": "The Trial Never Ended (expansion)",
+    "category": "virtual",
+    "order": 51,
+    "date": "2021, November 1",
+    "card_count_hint": "9",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/b/b0/Thetrialneverended.png/revision/latest?cb=20211210184251"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Trial_Never_Ended_(expansion)"
+  },
+  {
+    "id": "second-star-to-the-right-expansion",
+    "name": "Second Star to the Right",
+    "page_title": "Second Star to the Right (expansion)",
+    "category": "virtual",
+    "order": 52,
+    "date": "2021, December 17",
+    "card_count_hint": "36",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/d/d6/Secondstartotherightseticon.jpeg/revision/latest?cb=20211215132307"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Second_Star_to_the_Right_(expansion)"
+  },
+  {
+    "id": "the-motion-pictures-remastered-expansion",
+    "name": "The Motion Pictures Remastered",
+    "page_title": "The Motion Pictures Remastered (expansion)",
+    "category": "virtual",
+    "order": 53,
+    "date": "2022, June 24",
+    "card_count_hint": "134",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/5/50/Themotionpicturesremasteredicon.jpeg/revision/latest?cb=20220622232319"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/The_Motion_Pictures_Remastered_(expansion)"
+  },
+  {
+    "id": "paradise-lost-expansion",
+    "name": "Paradise Lost",
+    "page_title": "Paradise Lost (expansion)",
+    "category": "virtual",
+    "order": 54,
+    "date": "2022, August 26",
+    "card_count_hint": "37",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/c/c3/Paradiselostseticon.jpeg/revision/latest?cb=20220812161212"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Paradise_Lost_(expansion)"
+  },
+  {
+    "id": "nemesis-expansion",
+    "name": "Nemesis",
+    "page_title": "Nemesis (expansion)",
+    "category": "virtual",
+    "order": 55,
+    "date": "2023, February 10",
+    "card_count_hint": "55",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/7/72/Nemesisseticon.jpeg/revision/latest?cb=20230212115845"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Nemesis_(expansion)"
+  },
+  {
+    "id": "ships-of-the-line-expansion",
+    "name": "Ships of the Line",
+    "page_title": "Ships of the Line (Expansion)",
+    "category": "virtual",
+    "order": 56,
+    "date": "2023, August 11",
+    "card_count_hint": "18",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/0/01/Shipsofthelineseticon.jpeg/revision/latest?cb=20230811114608"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Ships_of_the_Line_(Expansion)"
+  },
+  {
+    "id": "showdown-four-lights-expansion",
+    "name": "Showdown: Four Lights",
+    "page_title": "Showdown: Four Lights (expansion)",
+    "category": "virtual",
+    "order": 57,
+    "date": "2023, December 8",
+    "card_count_hint": "37",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/2/2b/Showdown4lightsseticon.jpeg/revision/latest?cb=20231208105051"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Showdown:_Four_Lights_(expansion)"
+  },
+  {
+    "id": "showdown-four-lights-supplemental-expansion",
+    "name": "Showdown: Four Lights Supplemental",
+    "page_title": "Showdown: Four Lights Supplemental (expansion)",
+    "category": "virtual",
+    "order": 58,
+    "date": "2023, December 8",
+    "card_count_hint": "27",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/8/8d/Showdown4lightssupplementalseticon.jpeg/revision/latest?cb=20231208105741"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Showdown:_Four_Lights_Supplemental_(expansion)"
+  },
+  {
+    "id": "lifesigns-expansion",
+    "name": "Lifesigns",
+    "page_title": "Lifesigns (expansion)",
+    "category": "virtual",
+    "order": 59,
+    "date": "2024, June 7",
+    "card_count_hint": "22",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/5/51/Lifesignsseticon.jpeg/revision/latest?cb=20240607102329"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Lifesigns_(expansion)"
+  },
+  {
+    "id": "alternate-universe-twilight-expansion",
+    "name": "Alternate Universe: Twilight",
+    "page_title": "Alternate Universe: Twilight (expansion)",
+    "category": "virtual",
+    "order": 60,
+    "date": "2024, October 25",
+    "card_count_hint": "30",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/b/b3/Alternateuniversetwilightseticon.jpeg/revision/latest?cb=20241015182354"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Alternate_Universe:_Twilight_(expansion)"
+  },
+  {
+    "id": "premiere-traditional-expansion",
+    "name": "Premiere Traditional",
+    "page_title": "Premiere Traditional (expansion)",
+    "category": "virtual",
+    "order": 61,
+    "date": "2024, December 6",
+    "card_count_hint": "363",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/8/8e/Premieretraditionalseticon.jpeg/revision/latest?cb=20241206140500"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Premiere_Traditional_(expansion)"
+  },
+  {
+    "id": "premiere-remastered-expansion",
+    "name": "Premiere Remastered",
+    "page_title": "Premiere Remastered (expansion)",
+    "category": "virtual",
+    "order": 62,
+    "date": "2025, January 24",
+    "card_count_hint": "363",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/7/75/Premiereremasteredicon.jpeg/revision/latest?cb=20250113182101"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Premiere_Remastered_(expansion)"
+  },
+  {
+    "id": "dramatis-personae-expansion",
+    "name": "Dramatis Personae",
+    "page_title": "Dramatis Personae (expansion)",
+    "category": "virtual",
+    "order": 63,
+    "date": "2025, June 6",
+    "card_count_hint": "20",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/e/e8/DramatisPersonaeseticon.jpeg/revision/latest?cb=20250601111434"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/Dramatis_Personae_(expansion)"
+  },
+  {
+    "id": "all-good-things-traditional-expansion",
+    "name": "All Good Things Traditional",
+    "page_title": "All Good Things Traditional (expansion)",
+    "category": "virtual",
+    "order": 64,
+    "date": "2025, November 7",
+    "card_count_hint": "41",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/9/9a/AGT_Traditional_icon.jpg/revision/latest?cb=20251107130003"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/All_Good_Things_Traditional_(expansion)"
+  },
+  {
+    "id": "all-good-things-remastered-expansion",
+    "name": "All Good Things Remastered",
+    "page_title": "All Good Things Remastered (expansion)",
+    "category": "virtual",
+    "order": 65,
+    "date": "2025, December 5",
+    "card_count_hint": "41",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/c/ce/AGT_Re_set_icon.jpeg/revision/latest?cb=20251205110313"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/All_Good_Things_Remastered_(expansion)"
+  },
+  {
+    "id": "to-the-journey",
+    "name": "To the Journey",
+    "page_title": "To the Journey",
+    "category": "virtual",
+    "order": 66,
+    "date": "2026, April 10",
+    "card_count_hint": "37",
+    "block": "-",
+    "border_color": null,
+    "icon_urls": [
+      "https://static.wikia.nocookie.net/cardguide/images/f/f9/TtJ_set_icon.jpg/revision/latest?cb=20260410141604"
+    ],
+    "wiki_url": "https://cardguide.fandom.com/wiki/To_the_Journey"
+  }
+]
