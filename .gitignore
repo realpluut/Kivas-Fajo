@@ -69,3 +69,4 @@ app.*.map.json
 /wl1.png
 /wl2.png
 /emulator.log
+/.claude/
