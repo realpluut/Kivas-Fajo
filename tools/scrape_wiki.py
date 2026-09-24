@@ -204,8 +204,10 @@ def _strip_cell_attrs(cell: str) -> str:
     return m.group(1) if m else cell
 
 
-def extract_all_tables(wikitext: str) -> list[str]:
-    """Return every top-level {| ... |} block found anywhere in the page."""
+def extract_all_tables(wikitext: str) -> list[tuple[int, str]]:
+    """Return every top-level {| ... |} block found anywhere in the page,
+    each paired with its start offset in wikitext (so callers can tell which
+    section/heading a table falls under)."""
     tables = []
     i = 0
     n = len(wikitext)
@@ -224,7 +226,7 @@ def extract_all_tables(wikitext: str) -> list[str]:
                 depth -= 1
                 j += 2
                 if depth == 0:
-                    tables.append(wikitext[start:j])
+                    tables.append((start, wikitext[start:j]))
                     break
                 continue
             j += 1
@@ -232,6 +234,20 @@ def extract_all_tables(wikitext: str) -> list[str]:
             break
         i = j
     return tables
+
+
+_HEADING_RE = re.compile(r"^={2,4}\s*(.+?)\s*={2,4}\s*$", re.MULTILINE)
+
+
+def heading_before(wikitext: str, pos: int) -> str:
+    """The text of the nearest section heading (any level) before [pos],
+    with wiki bold markup stripped. Empty string if there's none."""
+    text = ""
+    for m in _HEADING_RE.finditer(wikitext):
+        if m.start() >= pos:
+            break
+        text = m.group(1).replace("'''", "").replace("''", "").strip()
+    return text
 
 
 def extract_table(wikitext: str, after_marker: str | None = None) -> str | None:
@@ -350,6 +366,30 @@ _BORDER_COLOR_OVERRIDES = {
     "Warp Pack (expansion)": "white",
 }
 
+# Sub-editions the wiki's top-level Expansions table no longer lists
+# separately (see parse_sets), but that collectors track as distinct
+# printings from their parent set. "suffix" is the exact trailing text on
+# every such card's own wiki page title -- how their rows get identified and
+# pulled back out of the parent set's merged card list in main().
+_MERGED_SUB_SETS = [
+    {
+        "id": "blaze-of-glory-foil-cards",
+        "name": "Blaze of Glory Foil Cards",
+        "parent_id": "blaze-of-glory-expansion",
+        "card_count_hint": "18",
+        "suffix": "(Foil)",
+        "anchor": "#Foil_Set",
+    },
+    {
+        "id": "starter-deck-ii-reprints",
+        "name": "Starter Deck II Reprints",
+        "parent_id": "starter-deck-ii",
+        "card_count_hint": "8",
+        "suffix": "(SD2 reprints)",
+        "anchor": "#Reprints",
+    },
+]
+
 
 def extract_border_color(wikitext: str) -> str | None:
     """Star Trek CCG 1st Edition's base set was reprinted several times with
@@ -421,26 +461,28 @@ def parse_sets() -> list[dict]:
     parse_expansion_table("==Expansions==", "physical")
     parse_expansion_table("==Virtual Expansions==", "virtual")
 
-    # The wiki's top-level Expansions table used to list "Blaze of Glory Foil
-    # Cards" as its own row (anchor-linked to a "#Foil_Set" section of the
-    # Blaze of Glory page); the current table no longer has that row, so
-    # those 18 cards would otherwise just merge into the base "Blaze of
-    # Glory" set's card list. Collectors track the foil printing separately
-    # from the base set, so keep it a set of its own here -- the actual foil
-    # cards get pulled back out of the merged card-list rows in main(), by
-    # page_title suffix ("(Foil)"), a real and stable naming pattern used on
-    # every foil card's own wiki page title.
-    base = next((s for s in sets if s["id"] == "blaze-of-glory-expansion"), None)
-    if base:
+    # The wiki's top-level Expansions table used to list these as their own
+    # rows (each anchor-linked to a sub-section of a parent set's page); the
+    # current table no longer has separate rows for them, so their cards
+    # would otherwise just merge into the parent set's card list. Collectors
+    # track a reprint/foil edition separately from the base set though, so
+    # keep each a set of its own here -- the actual cards get pulled back
+    # out of the parent's merged card-list rows in main(), by page_title
+    # suffix, a real and stable naming pattern used on every such card's own
+    # wiki page title.
+    for sub in _MERGED_SUB_SETS:
+        base = next((s for s in sets if s["id"] == sub["parent_id"]), None)
+        if not base:
+            continue
         sets.append(
             {
-                "id": "blaze-of-glory-foil-cards",
-                "name": "Blaze of Glory Foil Cards",
+                "id": sub["id"],
+                "name": sub["name"],
                 "page_title": base["page_title"],
                 "category": base["category"],
                 "order": base["order"] + 1,
                 "date": base["date"],
-                "card_count_hint": "18",
+                "card_count_hint": sub["card_count_hint"],
                 "block": base["block"],
                 "icon_files": list(base.get("icon_files", [])),
             }
@@ -453,19 +495,51 @@ def parse_sets() -> list[dict]:
 # Step 2: parse each set's "Card List" table -> one row per printing
 # ---------------------------------------------------------------------------
 
+_CARD_LIST_HEADING_RE = re.compile(r"^==\s*Card\s*List\s*==\s*$", re.MULTILINE | re.IGNORECASE)
+_TOP_HEADING_RE = re.compile(r"^==[^=\n].*?==\s*$", re.MULTILINE)
+
+
+def card_list_section(wikitext: str) -> str:
+    """The page's ==Card List== section (up to the next top-level heading,
+    or end of page) -- restricts table scanning to just this region so
+    unrelated tables elsewhere on the page (e.g. a "Bonus Items" section
+    listing redemption coupons/certificates with no header row at all, or
+    an "Errata Cards" section re-listing cards already counted) never get
+    misread as new card printings for this set. Falls back to the whole
+    page for the handful of pages that don't use this heading."""
+    m = _CARD_LIST_HEADING_RE.search(wikitext)
+    if not m:
+        return wikitext
+    start = m.end()
+    next_m = _TOP_HEADING_RE.search(wikitext, start)
+    end = next_m.start() if next_m else len(wikitext)
+    return wikitext[start:end]
+
+
 def parse_card_list(set_page_title: str) -> list[dict]:
     """Card-list tables are NOT consistently laid out across the wiki: column
     order, count, and even spelling ("AFFILATION" vs "AFFILIATION") vary by
     page, and some pages split the list across multiple tables. So: scan
     every table on the page, keep the ones whose header row contains TITLE,
-    and map columns by header name rather than position."""
+    and map columns by header name rather than position.
+
+    Skips tables under a "...Starter Deck..." heading -- these are
+    cross-reference tables ("which cards from other sets/printings are
+    bundled into this set's starter decks"), not this set's own card list.
+    E.g. The Trouble With Tribbles' "Starter Decks" section lists 27 cards
+    that are either identical reprints with no page of their own, or
+    distinctly-printed "tribbled" variants that aren't part of this set's
+    141-card count -- confirmed against the wiki's own numbered card list."""
     wt = get_wikitext(set_page_title)
     if not wt:
         print(f"  ! could not fetch set page {set_page_title!r}", file=sys.stderr)
         return []
+    section = card_list_section(wt)
     out = []
     seen_page_titles = set()
-    for table in extract_all_tables(wt):
+    for start, table in extract_all_tables(section):
+        if re.search(r"starter deck", heading_before(section, start), re.IGNORECASE):
+            continue
         rows = parse_table_rows(table)
         if not rows:
             continue
@@ -498,11 +572,21 @@ def parse_card_list(set_page_title: str) -> list[dict]:
                 continue
             code = mwp.parse(title_cell)
             links = code.filter_wikilinks()
-            if links:
-                page_title = str(links[0].title).strip()
-                display = str(links[0].text).strip() if links[0].text else page_title
-            else:
-                page_title = display = plain_text(title_cell)
+            if not links:
+                # A title cell with no wikilink doesn't reliably identify a
+                # real, distinct card page. Cross-reference tables (e.g. "27
+                # of these cards were reprinted with modified art for this
+                # set's starter deck; the rest are identical reprints with
+                # no page of their own") list some cards as bare text on
+                # purpose -- falling back to plain_text() here previously
+                # fabricated a card pointing at the wrong page entirely
+                # (e.g. a bare "Archer" cell resolving to the base/Premiere
+                # "Archer" page instead of this set's real "Archer (TTWT)"
+                # reprint, misattributing an unrelated card to this set).
+                # Missing a genuinely-unlinked one-off is far safer than that.
+                continue
+            page_title = str(links[0].title).strip()
+            display = str(links[0].text).strip() if links[0].text else page_title
             if not page_title or page_title in seen_page_titles:
                 continue
             seen_page_titles.add(page_title)
@@ -603,16 +687,18 @@ def main():
         sets = sets[: args.limit_sets]
     print(f"Found {len(sets)} sets.")
 
+    merged_sub_ids = {sub["id"] for sub in _MERGED_SUB_SETS}
     all_card_rows: list[dict] = []  # from card-list tables, tagged with set id
     for s in sets:
-        if s["id"] == "blaze-of-glory-foil-cards":
-            # Shares a page_title with blaze-of-glory-expansion (see
-            # parse_sets) -- its cards get split out of that set's rows
-            # below instead of parsing the same page a second time. Same
-            # physical border color as the base set (foil is a finish, not
-            # a different border scheme); that set is processed earlier in
-            # this loop, so its border_color is already known here.
-            base = next((x for x in sets if x["id"] == "blaze-of-glory-expansion"), None)
+        if s["id"] in merged_sub_ids:
+            # Shares a page_title with its parent set (see parse_sets) --
+            # its cards get split out of that set's rows below instead of
+            # parsing the same page a second time. Same physical border
+            # color as the parent (a reprint/foil is a different printing,
+            # not a different border scheme); the parent is processed
+            # earlier in this loop, so its border_color is already known.
+            sub = next(x for x in _MERGED_SUB_SETS if x["id"] == s["id"])
+            base = next((x for x in sets if x["id"] == sub["parent_id"]), None)
             s["border_color"] = base["border_color"] if base else None
             continue
         set_wikitext = get_wikitext(s["page_title"]) or ""
@@ -624,16 +710,17 @@ def main():
         all_card_rows.extend(rows)
         time.sleep(0.05)
 
-    # Split the Blaze of Glory foil printings back out into their own set
-    # (see parse_sets) -- every foil card's own wiki page title ends in
-    # "(Foil)", a real and stable naming pattern.
-    foil_count = 0
-    for r in all_card_rows:
-        if r["set_id"] == "blaze-of-glory-expansion" and r["page_title"].endswith("(Foil)"):
-            r["set_id"] = "blaze-of-glory-foil-cards"
-            foil_count += 1
-    if foil_count:
-        print(f"  Split {foil_count} foil printings into 'blaze-of-glory-foil-cards'")
+    # Split each merged sub-edition's cards back out into its own set (see
+    # parse_sets) -- every such card's own wiki page title ends in a fixed,
+    # real suffix.
+    for sub in _MERGED_SUB_SETS:
+        split_count = 0
+        for r in all_card_rows:
+            if r["set_id"] == sub["parent_id"] and r["page_title"].endswith(sub["suffix"]):
+                r["set_id"] = sub["id"]
+                split_count += 1
+        if split_count:
+            print(f"  Split {split_count} printings into {sub['id']!r}")
 
     print(f"Total card printings across all sets: {len(all_card_rows)}")
 
@@ -706,8 +793,9 @@ def main():
         s["icon_urls"] = [icon_url_by_file[f] for f in s.get("icon_files", []) if f in icon_url_by_file]
         s.pop("icon_files", None)
         s["wiki_url"] = BASE + s["page_title"].replace(" ", "_")
-        if s["id"] == "blaze-of-glory-foil-cards":
-            s["wiki_url"] += "#Foil_Set"
+        sub = next((x for x in _MERGED_SUB_SETS if x["id"] == s["id"]), None)
+        if sub:
+            s["wiki_url"] += sub["anchor"]
 
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     (ASSETS_DIR / "sets.json").write_text(json.dumps(sets, indent=2, ensure_ascii=False), encoding="utf-8")
