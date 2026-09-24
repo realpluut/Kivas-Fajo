@@ -26,6 +26,10 @@ Future<void> _deleteQuietly(String path) async {
   }
 }
 
+// Not using num.clamp() anywhere in this file -- it returns num, not double,
+// which the camera controller's setters require.
+double _clampD(double v, double lo, double hi) => v < lo ? lo : (v > hi ? hi : v);
+
 /// Picks the back camera to scan with, preferring the ultra-wide lens when
 /// the device has one. Card scanning is a macro-range task -- the card is
 /// held close enough to fill the frame -- and the standard wide lens' much
@@ -66,6 +70,15 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   CameraController? _cameraController;
   bool _torchOn = true;
   final _previewKey = GlobalKey();
+
+  // The ultra-wide lens (see _pickBackCamera) has a much wider field of view
+  // than the standard lens it replaced, which can shrink the card -- and
+  // especially its tiny copyright/year text -- too small in frame to read.
+  // Pinch-to-zoom lets you compensate, the same as bulk scan already offers.
+  double _minZoom = 1.0;
+  double _maxZoom = 1.0;
+  double _currentZoom = 1.0;
+  double _zoomAtGestureStart = 1.0;
 
   // Visual confirmation that a focus tap was registered and whether the
   // underlying camera call actually succeeded -- without this there's no way
@@ -133,6 +146,15 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         // Focus point control not supported on this device.
       }
 
+      try {
+        _minZoom = await controller.getMinZoomLevel();
+        _maxZoom = await controller.getMaxZoomLevel();
+        _currentZoom = _clampD(_currentZoom, _minZoom, _maxZoom);
+        await controller.setZoomLevel(_currentZoom);
+      } catch (_) {
+        // Zoom control not supported on this device; scanning still works at 1x.
+      }
+
       if (!mounted) return;
       setState(() => _cameraController = controller);
     } catch (e) {
@@ -187,6 +209,23 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     _focusIndicatorTimer = Timer(const Duration(milliseconds: 700), () {
       if (mounted) setState(() => _focusIndicatorPos = null);
     });
+  }
+
+  void _onScaleStart(ScaleStartDetails details) {
+    _zoomAtGestureStart = _currentZoom;
+  }
+
+  Future<void> _onScaleUpdate(ScaleUpdateDetails details) async {
+    final controller = _cameraController;
+    if (controller == null || _minZoom >= _maxZoom) return;
+    final newZoom = _clampD(_zoomAtGestureStart * details.scale, _minZoom, _maxZoom);
+    if ((newZoom - _currentZoom).abs() < 0.01) return;
+    setState(() => _currentZoom = newZoom);
+    try {
+      await controller.setZoomLevel(newZoom);
+    } catch (_) {
+      // Ignore transient zoom errors -- the next pinch update will retry.
+    }
   }
 
   void _cancelCapture() {
@@ -292,6 +331,9 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               onTapToFocus: _onTapToFocus,
               focusIndicatorPos: _focusIndicatorPos,
               focusIndicatorOk: _focusIndicatorOk,
+              onScaleStart: _onScaleStart,
+              onScaleUpdate: _onScaleUpdate,
+              currentZoom: _currentZoom,
             ),
           _ScanState.processing => const Center(
               child: Column(
@@ -402,6 +444,9 @@ class _CapturingView extends StatelessWidget {
   final void Function(TapUpDetails) onTapToFocus;
   final Offset? focusIndicatorPos;
   final bool focusIndicatorOk;
+  final GestureScaleStartCallback onScaleStart;
+  final GestureScaleUpdateCallback onScaleUpdate;
+  final double currentZoom;
   const _CapturingView({
     required this.controller,
     required this.torchOn,
@@ -412,6 +457,9 @@ class _CapturingView extends StatelessWidget {
     required this.onTapToFocus,
     required this.focusIndicatorPos,
     required this.focusIndicatorOk,
+    required this.onScaleStart,
+    required this.onScaleUpdate,
+    required this.currentZoom,
   });
 
   @override
@@ -432,10 +480,24 @@ class _CapturingView extends StatelessWidget {
                   GestureDetector(
                     key: previewKey,
                     onTapUp: onTapToFocus,
+                    onScaleStart: onScaleStart,
+                    onScaleUpdate: onScaleUpdate,
                     child: CameraPreview(c),
                   ),
                   if (focusIndicatorPos != null)
                     _FocusReticle(center: focusIndicatorPos!, ok: focusIndicatorOk),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(999)),
+                      child: Text(
+                        '${currentZoom.toStringAsFixed(1)}x',
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
