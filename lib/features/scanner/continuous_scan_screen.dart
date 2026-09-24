@@ -45,6 +45,14 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
   CameraController? _controller;
   Timer? _timer;
   final _previewKey = GlobalKey();
+
+  // Visual confirmation that a focus tap was registered and whether the
+  // underlying camera call actually succeeded -- without this there's no way
+  // to tell "nothing happened because the tap didn't register" apart from
+  // "the tap worked but the device rejected the focus/exposure call".
+  Offset? _focusIndicatorPos;
+  bool _focusIndicatorOk = true;
+  Timer? _focusIndicatorTimer;
   final _recognizer = TextRecognizer(script: TextRecognitionScript.latin);
   final _audioPlayer = AudioPlayer();
 
@@ -219,12 +227,24 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
       (local.dx / box.size.width).clamp(0.0, 1.0),
       (local.dy / box.size.height).clamp(0.0, 1.0),
     );
+
+    _focusIndicatorTimer?.cancel();
+    var ok = true;
     try {
       await controller.setFocusPoint(normalized);
       await controller.setExposurePoint(normalized);
     } catch (_) {
       // Focus/exposure point control not supported on this device.
+      ok = false;
     }
+    if (!mounted) return;
+    setState(() {
+      _focusIndicatorPos = local;
+      _focusIndicatorOk = ok;
+    });
+    _focusIndicatorTimer = Timer(const Duration(milliseconds: 700), () {
+      if (mounted) setState(() => _focusIndicatorPos = null);
+    });
   }
 
   Future<void> _onExposureChanged(double value) async {
@@ -384,6 +404,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
     WidgetsBinding.instance.removeObserver(this);
     WakelockPlus.disable();
     _timer?.cancel();
+    _focusIndicatorTimer?.cancel();
     _controller?.dispose();
     _recognizer.close();
     _audioPlayer.dispose();
@@ -428,6 +449,8 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
               onTapUp: _onTapToFocus,
               child: CameraPreview(controller),
             ),
+          if (_ambiguousImagePath == null && _focusIndicatorPos != null)
+            _FocusReticle(center: _focusIndicatorPos!, ok: _focusIndicatorOk),
           SafeArea(
             child: Column(
               children: [
@@ -545,6 +568,35 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Brief square that flashes where a focus tap landed -- green if the camera
+/// accepted the focus/exposure point, amber if the device rejected it (so a
+/// tap that visibly "does nothing" can be told apart from a tap that wasn't
+/// registered at all).
+class _FocusReticle extends StatelessWidget {
+  final Offset center;
+  final bool ok;
+  const _FocusReticle({required this.center, required this.ok});
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 64.0;
+    return Positioned(
+      left: center.dx - size / 2,
+      top: center.dy - size / 2,
+      child: IgnorePointer(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            border: Border.all(color: ok ? Colors.greenAccent : Colors.amber, width: 2),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
       ),
     );
   }

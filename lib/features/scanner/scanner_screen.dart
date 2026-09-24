@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -45,12 +46,21 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   bool _torchOn = true;
   final _previewKey = GlobalKey();
 
+  // Visual confirmation that a focus tap was registered and whether the
+  // underlying camera call actually succeeded -- without this there's no way
+  // to tell "nothing happened because the tap didn't register" apart from
+  // "the tap worked but the device rejected the focus/exposure call".
+  Offset? _focusIndicatorPos;
+  bool _focusIndicatorOk = true;
+  Timer? _focusIndicatorTimer;
+
   final _recognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
   @override
   void dispose() {
     _cameraController?.dispose();
     _recognizer.close();
+    _focusIndicatorTimer?.cancel();
     super.dispose();
   }
 
@@ -138,12 +148,24 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       (local.dx / box.size.width).clamp(0.0, 1.0),
       (local.dy / box.size.height).clamp(0.0, 1.0),
     );
+
+    _focusIndicatorTimer?.cancel();
+    var ok = true;
     try {
       await controller.setFocusPoint(normalized);
       await controller.setExposurePoint(normalized);
     } catch (_) {
       // Focus/exposure point control not supported on this device.
+      ok = false;
     }
+    if (!mounted) return;
+    setState(() {
+      _focusIndicatorPos = local;
+      _focusIndicatorOk = ok;
+    });
+    _focusIndicatorTimer = Timer(const Duration(milliseconds: 700), () {
+      if (mounted) setState(() => _focusIndicatorPos = null);
+    });
   }
 
   void _cancelCapture() {
@@ -245,6 +267,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               onToggleTorch: _toggleTorch,
               onCancel: _cancelCapture,
               onTapToFocus: _onTapToFocus,
+              focusIndicatorPos: _focusIndicatorPos,
+              focusIndicatorOk: _focusIndicatorOk,
             ),
           _ScanState.processing => const Center(
               child: Column(
@@ -353,6 +377,8 @@ class _CapturingView extends StatelessWidget {
   final VoidCallback onToggleTorch;
   final VoidCallback onCancel;
   final void Function(TapUpDetails) onTapToFocus;
+  final Offset? focusIndicatorPos;
+  final bool focusIndicatorOk;
   const _CapturingView({
     required this.controller,
     required this.torchOn,
@@ -361,6 +387,8 @@ class _CapturingView extends StatelessWidget {
     required this.onToggleTorch,
     required this.onCancel,
     required this.onTapToFocus,
+    required this.focusIndicatorPos,
+    required this.focusIndicatorOk,
   });
 
   @override
@@ -376,10 +404,16 @@ class _CapturingView extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             child: AspectRatio(
               aspectRatio: c.value.aspectRatio,
-              child: GestureDetector(
-                key: previewKey,
-                onTapUp: onTapToFocus,
-                child: CameraPreview(c),
+              child: Stack(
+                children: [
+                  GestureDetector(
+                    key: previewKey,
+                    onTapUp: onTapToFocus,
+                    child: CameraPreview(c),
+                  ),
+                  if (focusIndicatorPos != null)
+                    _FocusReticle(center: focusIndicatorPos!, ok: focusIndicatorOk),
+                ],
               ),
             ),
           ),
@@ -414,6 +448,35 @@ class _CapturingView extends StatelessWidget {
         ),
         const SizedBox(height: 8),
       ],
+    );
+  }
+}
+
+/// Brief square that flashes where a focus tap landed -- green if the camera
+/// accepted the focus/exposure point, amber if the device rejected it (so a
+/// tap that visibly "does nothing" can be told apart from a tap that wasn't
+/// registered at all).
+class _FocusReticle extends StatelessWidget {
+  final Offset center;
+  final bool ok;
+  const _FocusReticle({required this.center, required this.ok});
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 64.0;
+    return Positioned(
+      left: center.dx - size / 2,
+      top: center.dy - size / 2,
+      child: IgnorePointer(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            border: Border.all(color: ok ? Colors.greenAccent : Colors.amber, width: 2),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      ),
     );
   }
 }
