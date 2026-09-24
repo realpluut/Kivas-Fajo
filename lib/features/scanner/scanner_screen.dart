@@ -124,9 +124,13 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     try {
       final cameras = await availableCameras();
       final back = _pickBackCamera(cameras);
-      // veryHigh, not max -- this is a single deliberate shot, not bulk
-      // scanning, so a slower max-res capture isn't worth the wait here.
-      final controller = CameraController(back, ResolutionPreset.veryHigh, enableAudio: false);
+      // max, not veryHigh: veryHigh maps to a flat 1920x1080 video preset
+      // (~2MP) on iOS, while max uses the camera's actual highest-resolution
+      // photo format -- the same ballpark the system Camera app captures at.
+      // That gap in detail is exactly what made the tiny copyright/year
+      // text unreadable even when nothing else was wrong. This is a single
+      // deliberate shot, not bulk scanning, so the slower capture is worth it.
+      final controller = CameraController(back, ResolutionPreset.max, enableAudio: false);
       await controller.initialize();
 
       if (_torchOn) {
