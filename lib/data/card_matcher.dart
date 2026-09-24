@@ -83,27 +83,35 @@ int? _firstYear(String text) {
   return null;
 }
 
-/// The first plausible copyright/print year found in the OCR'd text (Star
-/// Trek CCG 1st Edition ran 1994-2029ish) -- a proxy for the small copyright
-/// line printed on every card, used to prefer the matching printing/set when
-/// a card name was reprinted across multiple editions.
+/// The first plausible copyright/print year found across [passes] (Star Trek
+/// CCG 1st Edition ran 1994-2029ish) -- a proxy for the small copyright line
+/// printed on every card, used to prefer the matching printing/set when a
+/// card name was reprinted across multiple editions.
 ///
-/// Checked right-to-left across recognized lines first, since the
-/// copyright/year text sits in a narrow strip near the card's right edge
-/// (see the camera's right-biased focus point in the scanner screens) --
-/// this avoids picking up a stray year-like number from flavor/game text
-/// elsewhere on the card before ever looking there. Falls back to scanning
-/// everything in whatever order ML Kit returned it, in case that strip
-/// wasn't read as its own line.
-int? extractYear(RecognizedText recognized) {
-  final lines = [
-    for (final block in recognized.blocks) for (final line in block.lines) line,
-  ]..sort((a, b) => b.boundingBox.left.compareTo(a.boundingBox.left));
-  for (final line in lines) {
-    final y = _firstYear(line.text);
+/// [passes] is checked in order, and within each pass, lines are checked
+/// right-to-left -- the copyright/year text sits in a narrow strip near the
+/// card's right edge, printed sideways (see recognizeRotatedForYear, which
+/// supplies a rotated-image OCR pass so that strip reads normally instead of
+/// vertically), so callers should put that pass first. This avoids picking
+/// up a stray year-like number from flavor/game text elsewhere on the card
+/// before ever looking there. Falls back to scanning each pass' full text in
+/// whatever order ML Kit returned it, in case the strip wasn't read as its
+/// own line.
+int? extractYear(List<RecognizedText> passes) {
+  for (final recognized in passes) {
+    final lines = [
+      for (final block in recognized.blocks) for (final line in block.lines) line,
+    ]..sort((a, b) => b.boundingBox.left.compareTo(a.boundingBox.left));
+    for (final line in lines) {
+      final y = _firstYear(line.text);
+      if (y != null) return y;
+    }
+  }
+  for (final recognized in passes) {
+    final y = _firstYear(recognized.text);
     if (y != null) return y;
   }
-  return _firstYear(recognized.text);
+  return null;
 }
 
 /// Matches OCR'd text (and, optionally, a photo-detected border color)
@@ -112,6 +120,11 @@ int? extractYear(RecognizedText recognized) {
 /// year/border narrow it down to a single confident pick.
 Future<CardMatchResult> matchCardFromOcr({
   required RecognizedText recognized,
+  // OCR pass over a rotated copy of the same photo -- see
+  // recognizeRotatedForYear -- used only to help find the sideways-printed
+  // year; the un-rotated [recognized] pass above is still what drives name
+  // matching. Optional since not every caller has one to offer.
+  RecognizedText? rotatedRecognized,
   required CardRepository repo,
   required List<String> names,
   String? detectedBorderColor,
@@ -128,7 +141,7 @@ Future<CardMatchResult> matchCardFromOcr({
   ];
   if (lines.isEmpty) return CardMatchResult.noText;
 
-  final year = extractYear(recognized);
+  final year = extractYear([?rotatedRecognized, recognized]);
   final matches = bestMatches<String>(ocrLines: lines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
   if (matches.isEmpty) {
     return CardMatchResult(

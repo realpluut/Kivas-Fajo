@@ -13,6 +13,7 @@ import '../../data/border_detector.dart';
 import '../../data/card_matcher.dart';
 import '../../data/models/card_set.dart';
 import '../../data/models/trek_card.dart';
+import '../../data/rotated_capture.dart';
 import '../../state/providers.dart';
 import 'set_filter_sheet.dart';
 
@@ -298,6 +299,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
     try {
       file = await controller.takePicture();
       final recognized = await _recognizer.processImage(InputImage.fromFilePath(file.path));
+      final rotatedRecognized = await recognizeRotatedForYear(file.path, _recognizer);
       final borderSample = await sampleBorder(file.path);
       final setFilterId = _setFilterId;
       final names = setFilterId == null
@@ -305,6 +307,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
           : await ref.read(namesInSetProvider(setFilterId).future);
       final result = await matchCardFromOcr(
         recognized: recognized,
+        rotatedRecognized: rotatedRecognized,
         repo: ref.read(cardRepositoryProvider),
         names: names,
         detectedBorderColor: borderSample.color,

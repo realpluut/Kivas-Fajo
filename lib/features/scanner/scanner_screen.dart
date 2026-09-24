@@ -11,6 +11,7 @@ import '../../data/border_detector.dart';
 import '../../data/card_matcher.dart';
 import '../../data/models/card_set.dart';
 import '../../data/models/trek_card.dart';
+import '../../data/rotated_capture.dart';
 import '../../state/providers.dart';
 import '../card_detail/card_detail_screen.dart';
 import 'continuous_scan_screen.dart';
@@ -214,11 +215,13 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   Future<void> _processPhoto(String path) async {
     try {
       final recognized = await _recognizer.processImage(InputImage.fromFilePath(path));
+      final rotatedRecognized = await recognizeRotatedForYear(path, _recognizer);
       final borderSample = await sampleBorder(path);
       _borderDebug = borderSample.debug;
       final names = await ref.read(distinctCardNamesProvider.future);
       final result = await matchCardFromOcr(
         recognized: recognized,
+        rotatedRecognized: rotatedRecognized,
         repo: ref.read(cardRepositoryProvider),
         names: names,
         detectedBorderColor: borderSample.color,
