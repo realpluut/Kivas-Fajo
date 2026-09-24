@@ -44,6 +44,7 @@ class ContinuousScanScreen extends ConsumerStatefulWidget {
 class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> with WidgetsBindingObserver {
   CameraController? _controller;
   Timer? _timer;
+  final _previewKey = GlobalKey();
   final _recognizer = TextRecognizer(script: TextRecognitionScript.latin);
   final _audioPlayer = AudioPlayer();
 
@@ -202,6 +203,27 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
       await controller.setZoomLevel(newZoom);
     } catch (_) {
       // Ignore transient zoom errors -- the next pinch update will retry.
+    }
+  }
+
+  // Lets you tap the card in the live preview to force a refocus there, the
+  // same as the system Camera app -- the fixed focus point set at startup is
+  // a reasonable default but doesn't always lock onto the card on every
+  // device/lens.
+  Future<void> _onTapToFocus(TapUpDetails details) async {
+    final controller = _controller;
+    final box = _previewKey.currentContext?.findRenderObject() as RenderBox?;
+    if (controller == null || box == null) return;
+    final local = box.globalToLocal(details.globalPosition);
+    final normalized = Offset(
+      (local.dx / box.size.width).clamp(0.0, 1.0),
+      (local.dy / box.size.height).clamp(0.0, 1.0),
+    );
+    try {
+      await controller.setFocusPoint(normalized);
+      await controller.setExposurePoint(normalized);
+    } catch (_) {
+      // Focus/exposure point control not supported on this device.
     }
   }
 
@@ -400,8 +422,10 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
             Image.file(File(_ambiguousImagePath!), fit: BoxFit.cover)
           else
             GestureDetector(
+              key: _previewKey,
               onScaleStart: _onScaleStart,
               onScaleUpdate: _onScaleUpdate,
+              onTapUp: _onTapToFocus,
               child: CameraPreview(controller),
             ),
           SafeArea(

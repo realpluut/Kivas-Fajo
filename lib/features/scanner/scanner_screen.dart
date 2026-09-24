@@ -43,6 +43,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
   CameraController? _cameraController;
   bool _torchOn = true;
+  final _previewKey = GlobalKey();
 
   final _recognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
@@ -121,6 +122,27 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       setState(() => _torchOn = next);
     } catch (_) {
       // Device/camera doesn't support a torch -- leave state as it was.
+    }
+  }
+
+  // Lets you tap the card in the preview to force a refocus there, the same
+  // as the system Camera app -- the auto focus point set at startup is a
+  // reasonable default, but doesn't always lock onto the card on every
+  // device/lens.
+  Future<void> _onTapToFocus(TapUpDetails details) async {
+    final controller = _cameraController;
+    final box = _previewKey.currentContext?.findRenderObject() as RenderBox?;
+    if (controller == null || box == null) return;
+    final local = box.globalToLocal(details.globalPosition);
+    final normalized = Offset(
+      (local.dx / box.size.width).clamp(0.0, 1.0),
+      (local.dy / box.size.height).clamp(0.0, 1.0),
+    );
+    try {
+      await controller.setFocusPoint(normalized);
+      await controller.setExposurePoint(normalized);
+    } catch (_) {
+      // Focus/exposure point control not supported on this device.
     }
   }
 
@@ -218,9 +240,11 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           _ScanState.capturing => _CapturingView(
               controller: _cameraController,
               torchOn: _torchOn,
+              previewKey: _previewKey,
               onCapture: _capture,
               onToggleTorch: _toggleTorch,
               onCancel: _cancelCapture,
+              onTapToFocus: _onTapToFocus,
             ),
           _ScanState.processing => const Center(
               child: Column(
@@ -292,9 +316,10 @@ class _IdleView extends StatelessWidget {
           const SizedBox(height: 8),
           const Text(
             "Fit the card's title and the small copyright line in frame -- "
-            "the year printed there helps pick the right edition. If there's "
-            "only one clear match it's added automatically; otherwise you'll "
-            'be asked which printing it is.',
+            "the year printed there helps pick the right edition. Tap the "
+            "card in the preview if it looks out of focus. If there's only "
+            "one clear match it's added automatically; otherwise you'll be "
+            'asked which printing it is.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey),
           ),
@@ -323,15 +348,19 @@ class _IdleView extends StatelessWidget {
 class _CapturingView extends StatelessWidget {
   final CameraController? controller;
   final bool torchOn;
+  final Key previewKey;
   final VoidCallback onCapture;
   final VoidCallback onToggleTorch;
   final VoidCallback onCancel;
+  final void Function(TapUpDetails) onTapToFocus;
   const _CapturingView({
     required this.controller,
     required this.torchOn,
+    required this.previewKey,
     required this.onCapture,
     required this.onToggleTorch,
     required this.onCancel,
+    required this.onTapToFocus,
   });
 
   @override
@@ -345,7 +374,14 @@ class _CapturingView extends StatelessWidget {
         Expanded(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: AspectRatio(aspectRatio: c.value.aspectRatio, child: CameraPreview(c)),
+            child: AspectRatio(
+              aspectRatio: c.value.aspectRatio,
+              child: GestureDetector(
+                key: previewKey,
+                onTapUp: onTapToFocus,
+                child: CameraPreview(c),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 16),
