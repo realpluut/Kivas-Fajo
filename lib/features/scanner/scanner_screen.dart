@@ -566,7 +566,9 @@ class _ScanDiagnostics extends StatelessWidget {
               'Detected border: ${result.detectedBorderColor ?? "none"}\n'
               'Border detection path: ${borderDebug ?? "unknown"}\n'
               'Detected year: ${result.detectedYear ?? "none"}\n'
-              'Raw OCR text:\n${result.rawText.isEmpty ? "(nothing read)" : result.rawText}',
+              'Raw OCR text:\n${result.rawText.isEmpty ? "(nothing read)" : result.rawText}\n\n'
+              'Rotated-strip OCR text (for the year):\n'
+              '${result.rotatedRawText == null ? "(no rotated pass)" : result.rotatedRawText!.isEmpty ? "(nothing read)" : result.rotatedRawText}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),

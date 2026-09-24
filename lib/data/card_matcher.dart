@@ -41,6 +41,13 @@ class CardMatchCandidate {
 class CardMatchResult {
   final bool hasText;
   final String rawText;
+  // Whatever the rotated-strip OCR pass read (see recognizeRotatedForYear),
+  // shown alongside rawText in the scan diagnostics so a "year not found"
+  // report can be told apart from "that pass read nothing at all" versus
+  // "it read something, just not a year" -- otherwise a failure there is
+  // invisible, since only the year extracted from it (if any) surfaces
+  // anywhere else.
+  final String? rotatedRawText;
   final String? matchedName;
   final int? detectedYear;
   final String? detectedBorderColor;
@@ -55,6 +62,7 @@ class CardMatchResult {
   const CardMatchResult({
     required this.hasText,
     required this.rawText,
+    this.rotatedRawText,
     required this.matchedName,
     required this.detectedYear,
     required this.detectedBorderColor,
@@ -152,6 +160,7 @@ Future<CardMatchResult> matchCardFromOcr({
     return CardMatchResult(
       hasText: true,
       rawText: recognized.text,
+      rotatedRawText: rotatedRecognized?.text,
       matchedName: null,
       detectedYear: year,
       detectedBorderColor: detectedBorderColor,
@@ -209,6 +218,7 @@ Future<CardMatchResult> matchCardFromOcr({
   return CardMatchResult(
     hasText: true,
     rawText: recognized.text,
+    rotatedRawText: rotatedRecognized?.text,
     matchedName: matches.first.value,
     detectedYear: year,
     detectedBorderColor: detectedBorderColor,
