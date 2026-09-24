@@ -30,6 +30,26 @@ Future<void> _deleteQuietly(String path) async {
   }
 }
 
+/// Picks the back camera to scan with, preferring the ultra-wide lens when
+/// the device has one. Card scanning is a macro-range task -- the card is
+/// held close enough to fill the frame -- and the standard wide lens' much
+/// longer minimum focus distance can't rack focus that close on some
+/// devices. The system Camera app handles this by auto-switching to the
+/// ultra-wide lens for "macro mode", but that's driven by an internal
+/// Apple multi-camera device this plugin doesn't expose (it only lists the
+/// physical lenses individually) -- so pick the ultra-wide lens ourselves
+/// instead. Falls back to whatever back camera is available (e.g. on
+/// Android, where lensType isn't populated the same way and this simply
+/// never matches).
+CameraDescription _pickBackCamera(List<CameraDescription> cameras) {
+  final backCameras = cameras.where((c) => c.lensDirection == CameraLensDirection.back).toList();
+  if (backCameras.isEmpty) return cameras.first;
+  return backCameras.firstWhere(
+    (c) => c.lensType == CameraLensType.ultraWide,
+    orElse: () => backCameras.first,
+  );
+}
+
 /// Live "webcam-style" bulk scanner: keeps the camera open and, every few
 /// seconds, captures a frame, OCRs it, and -- if it's a confident, new match
 /// -- adds it to the collection automatically. Meant for running through a
@@ -117,7 +137,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
   Future<void> _init() async {
     try {
       final cameras = await availableCameras();
-      final back = cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back, orElse: () => cameras.first);
+      final back = _pickBackCamera(cameras);
       final controller = CameraController(back, _resolutionPreset, enableAudio: false);
       await controller.initialize();
 

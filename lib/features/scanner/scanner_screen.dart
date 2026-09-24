@@ -25,6 +25,26 @@ Future<void> _deleteQuietly(String path) async {
   }
 }
 
+/// Picks the back camera to scan with, preferring the ultra-wide lens when
+/// the device has one. Card scanning is a macro-range task -- the card is
+/// held close enough to fill the frame -- and the standard wide lens' much
+/// longer minimum focus distance can't rack focus that close on some
+/// devices. The system Camera app handles this by auto-switching to the
+/// ultra-wide lens for "macro mode", but that's driven by an internal
+/// Apple multi-camera device this plugin doesn't expose (it only lists the
+/// physical lenses individually) -- so pick the ultra-wide lens ourselves
+/// instead. Falls back to whatever back camera is available (e.g. on
+/// Android, where lensType isn't populated the same way and this simply
+/// never matches).
+CameraDescription _pickBackCamera(List<CameraDescription> cameras) {
+  final backCameras = cameras.where((c) => c.lensDirection == CameraLensDirection.back).toList();
+  if (backCameras.isEmpty) return cameras.first;
+  return backCameras.firstWhere(
+    (c) => c.lensType == CameraLensType.ultraWide,
+    orElse: () => backCameras.first,
+  );
+}
+
 class ScannerScreen extends ConsumerStatefulWidget {
   const ScannerScreen({super.key});
 
@@ -89,7 +109,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     });
     try {
       final cameras = await availableCameras();
-      final back = cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back, orElse: () => cameras.first);
+      final back = _pickBackCamera(cameras);
       // veryHigh, not max -- this is a single deliberate shot, not bulk
       // scanning, so a slower max-res capture isn't worth the wait here.
       final controller = CameraController(back, ResolutionPreset.veryHigh, enableAudio: false);
