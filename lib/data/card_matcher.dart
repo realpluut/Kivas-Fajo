@@ -75,8 +75,13 @@ class CardMatchResult {
   );
 }
 
+// Star Trek CCG 1st Edition's actual print run starts 1994 (per the wiki's
+// own set dates) -- narrower than a generic "looks like a year" pattern
+// would allow, so an OCR digit misread that still looks year-shaped (e.g.
+// misreading a 9 as an 8 and landing on "1985") gets rejected outright
+// instead of silently pointing to the wrong printing.
 int? _firstYear(String text) {
-  for (final m in RegExp(r'(19[6-9]\d|20[0-3]\d)').allMatches(text)) {
+  for (final m in RegExp(r'(199[4-9]|20[0-3]\d)').allMatches(text)) {
     final y = int.tryParse(m.group(0)!);
     if (y != null) return y;
   }
