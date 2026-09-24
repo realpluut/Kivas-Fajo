@@ -70,3 +70,7 @@ app.*.map.json
 /wl2.png
 /emulator.log
 /.claude/
+
+# scrape_wiki.py's on-disk HTTP response cache -- regenerable, and grows
+# to hundreds of files during a full scrape.
+/tools/cache/

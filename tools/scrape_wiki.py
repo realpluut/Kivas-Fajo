@@ -300,6 +300,14 @@ def parse_table_rows(table_block: str) -> list[list[str]]:
         if stripped.startswith("|-"):
             flush_row()
             mode = None
+        elif stripped.startswith("|+"):
+            # Table caption syntax (e.g. a bare "|+" with no caption text).
+            # Not a cell -- if left to fall through to the generic "|" branch
+            # below it gets absorbed as a phantom leading cell, shifting
+            # every column index in the table by one and silently
+            # corrupting every row (a card's title cell gets read from the
+            # RARITY column instead, etc).
+            continue
         elif stripped.startswith("!"):
             flush_cell()
             mode = "header"
@@ -412,6 +420,32 @@ def parse_sets() -> list[dict]:
 
     parse_expansion_table("==Expansions==", "physical")
     parse_expansion_table("==Virtual Expansions==", "virtual")
+
+    # The wiki's top-level Expansions table used to list "Blaze of Glory Foil
+    # Cards" as its own row (anchor-linked to a "#Foil_Set" section of the
+    # Blaze of Glory page); the current table no longer has that row, so
+    # those 18 cards would otherwise just merge into the base "Blaze of
+    # Glory" set's card list. Collectors track the foil printing separately
+    # from the base set, so keep it a set of its own here -- the actual foil
+    # cards get pulled back out of the merged card-list rows in main(), by
+    # page_title suffix ("(Foil)"), a real and stable naming pattern used on
+    # every foil card's own wiki page title.
+    base = next((s for s in sets if s["id"] == "blaze-of-glory-expansion"), None)
+    if base:
+        sets.append(
+            {
+                "id": "blaze-of-glory-foil-cards",
+                "name": "Blaze of Glory Foil Cards",
+                "page_title": base["page_title"],
+                "category": base["category"],
+                "order": base["order"] + 1,
+                "date": base["date"],
+                "card_count_hint": "18",
+                "block": base["block"],
+                "icon_files": list(base.get("icon_files", [])),
+            }
+        )
+
     return sets
 
 
@@ -571,6 +605,16 @@ def main():
 
     all_card_rows: list[dict] = []  # from card-list tables, tagged with set id
     for s in sets:
+        if s["id"] == "blaze-of-glory-foil-cards":
+            # Shares a page_title with blaze-of-glory-expansion (see
+            # parse_sets) -- its cards get split out of that set's rows
+            # below instead of parsing the same page a second time. Same
+            # physical border color as the base set (foil is a finish, not
+            # a different border scheme); that set is processed earlier in
+            # this loop, so its border_color is already known here.
+            base = next((x for x in sets if x["id"] == "blaze-of-glory-expansion"), None)
+            s["border_color"] = base["border_color"] if base else None
+            continue
         set_wikitext = get_wikitext(s["page_title"]) or ""
         s["border_color"] = _BORDER_COLOR_OVERRIDES.get(s["page_title"]) or extract_border_color(set_wikitext)
         rows = parse_card_list(s["page_title"])
@@ -579,6 +623,17 @@ def main():
             r["set_id"] = s["id"]
         all_card_rows.extend(rows)
         time.sleep(0.05)
+
+    # Split the Blaze of Glory foil printings back out into their own set
+    # (see parse_sets) -- every foil card's own wiki page title ends in
+    # "(Foil)", a real and stable naming pattern.
+    foil_count = 0
+    for r in all_card_rows:
+        if r["set_id"] == "blaze-of-glory-expansion" and r["page_title"].endswith("(Foil)"):
+            r["set_id"] = "blaze-of-glory-foil-cards"
+            foil_count += 1
+    if foil_count:
+        print(f"  Split {foil_count} foil printings into 'blaze-of-glory-foil-cards'")
 
     print(f"Total card printings across all sets: {len(all_card_rows)}")
 
@@ -651,6 +706,8 @@ def main():
         s["icon_urls"] = [icon_url_by_file[f] for f in s.get("icon_files", []) if f in icon_url_by_file]
         s.pop("icon_files", None)
         s["wiki_url"] = BASE + s["page_title"].replace(" ", "_")
+        if s["id"] == "blaze-of-glory-foil-cards":
+            s["wiki_url"] += "#Foil_Set"
 
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     (ASSETS_DIR / "sets.json").write_text(json.dumps(sets, indent=2, ensure_ascii=False), encoding="utf-8")
