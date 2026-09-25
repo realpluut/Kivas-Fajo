@@ -9,7 +9,7 @@ import 'models/trek_card.dart';
 
 /// Bump this whenever assets/sets.json or assets/cards.json are regenerated
 /// with a meaningfully different shape/content, so existing installs reseed.
-const int kCurrentDataVersion = 12;
+const int kCurrentDataVersion = 13;
 
 class AppDatabase {
   AppDatabase._();

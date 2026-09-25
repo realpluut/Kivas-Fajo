@@ -606,6 +606,20 @@ def parse_card_list(set_page_title: str) -> list[dict]:
 # Step 3: parse each card page's stats infobox table
 # ---------------------------------------------------------------------------
 
+
+def normalize_type(t: str | None) -> str | None:
+    """Canonicalizes capitalization so the same card type doesn't show up as
+    two different group headers in the app -- e.g. "Q dilemma" vs
+    "Q Dilemma" is a real, pre-existing inconsistency in the wiki's own TYPE
+    column text, not something introduced by scraping. str.title() mangles
+    roman numerals ("Mission II" -> "Mission Ii"), so those get patched back
+    up afterward."""
+    if not t:
+        return t
+    titled = t.title()
+    return re.sub(r"\bI(i+)\b", lambda m: "I" + m.group(1).upper(), titled)
+
+
 LABEL_MAP = {
     "rarity": "rarity",
     "printing": "printing",
@@ -751,7 +765,7 @@ def main():
                 "base_name": base_name or r["display_name"],
                 "set_id": r["set_id"],
                 "rarity": infobox.get("rarity") or r["rarity"] or None,
-                "type": infobox.get("type") or r["type"] or None,
+                "type": normalize_type(infobox.get("type") or r["type"] or None),
                 "affiliation": infobox.get("affiliation") or r["affiliation"] or None,
                 "printing": infobox.get("printing"),
                 "property_logo": infobox.get("property_logo"),
