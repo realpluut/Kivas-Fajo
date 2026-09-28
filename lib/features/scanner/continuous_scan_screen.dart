@@ -11,6 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/border_detector.dart';
 import '../../data/card_matcher.dart';
+import '../../data/image_prep.dart';
 import '../../data/models/card_set.dart';
 import '../../data/models/trek_card.dart';
 import '../../data/rotated_capture.dart';
@@ -86,7 +87,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
 
   bool _busy = false;
   String? _initError;
-  String _status = 'Point the camera at a card.';
+  String _status = 'Frame a card, then tap play to start scanning.';
   String? _lastAddedCardId;
   final List<TrekCard> _addedThisSession = [];
 
@@ -101,10 +102,11 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
   // look like it was asking about whatever card happened to be in frame now.
   String? _ambiguousImagePath;
 
-  // On by default: consistent light helps both OCR and border-color
-  // detection, which ambient lighting has repeatedly thrown off. Left
-  // toggleable in case it glares off a reflective tray/sleeve.
-  bool _torchOn = true;
+  // Off by default -- same reasoning as the single-shot scanner: flash glare
+  // off glossy card stock right where the title/copyright text sits tends to
+  // hurt OCR more than the extra light helps. Still toggleable for a
+  // genuinely dark room.
+  bool _torchOn = false;
 
   // veryHigh is the default -- enough resolution for the tiny sideways
   // copyright/year text -- with max available for even more detail at the
@@ -113,8 +115,16 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
 
   double _minZoom = 1.0;
   double _maxZoom = 1.0;
-  double _currentZoom = 1.1; // the existing "10% zoom in by default" from before manual control was added
-  double _zoomAtGestureStart = 1.1;
+  // 1.5x by default -- compensates for the ultra-wide lens's much wider
+  // field of view, same as the single-shot scanner.
+  double _currentZoom = 1.5;
+  double _zoomAtGestureStart = 1.5;
+
+  // Starts paused -- capturing (and burning through shutter cycles/battery)
+  // the instant this screen opens, before the card is even framed, was the
+  // complaint that led to this. The camera preview still shows immediately;
+  // only the automatic capture loop waits for an explicit start.
+  bool _running = false;
 
   double _minExposure = 0.0;
   double _maxExposure = 0.0;
@@ -185,7 +195,12 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
 
       if (!mounted) return;
       setState(() => _controller = controller);
-      _timer = Timer.periodic(_tickInterval, (_) => _tick());
+      // Only (re)start the capture loop if it was already running -- e.g.
+      // resuming from the background mid-session -- never on a fresh open.
+      if (_running) {
+        _timer?.cancel();
+        _timer = Timer.periodic(_tickInterval, (_) => _tick());
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _initError = 'Could not start the camera: $e');
@@ -215,6 +230,23 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
       setState(() => _torchOn = newState);
     } catch (_) {
       // Device/camera doesn't support a torch -- leave state as it was.
+    }
+  }
+
+  void _toggleRunning() {
+    if (_running) {
+      _timer?.cancel();
+      setState(() {
+        _running = false;
+        _status = 'Paused. Tap play to resume scanning.';
+      });
+    } else {
+      setState(() {
+        _running = true;
+        _status = 'Point the camera at a card.';
+      });
+      _timer?.cancel();
+      _timer = Timer.periodic(_tickInterval, (_) => _tick());
     }
   }
 
@@ -295,10 +327,14 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
     if (_busy || controller == null || !controller.value.isInitialized) return;
     _busy = true;
     XFile? file;
+    String? grayPath;
     var keepFile = false;
     try {
       file = await controller.takePicture();
-      final recognized = await _recognizer.processImage(InputImage.fromFilePath(file.path));
+      // Grayscale copy for OCR only -- border detection below still reads
+      // the original color photo (see image_prep.dart).
+      grayPath = await grayscaleCopy(file.path);
+      final recognized = await _recognizer.processImage(InputImage.fromFilePath(grayPath));
       final rotatedRecognized = await recognizeRotatedForYear(file.path, _recognizer);
       final borderSample = await sampleBorder(file.path);
       final setFilterId = _setFilterId;
@@ -367,6 +403,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
       if (path != null && !keepFile) {
         await _deleteQuietly(path);
       }
+      if (grayPath != null && grayPath != path) await _deleteQuietly(grayPath);
       _busy = false;
     }
   }
@@ -385,7 +422,12 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
     // ??= would see it as non-null and skip creating a replacement, which
     // silently killed the auto-scan loop the first time this ran.
     _timer?.cancel();
-    _timer = Timer.periodic(_tickInterval, (_) => _tick());
+    // Only restart the loop if it was actually running -- an ambiguous
+    // match can only fire while running, but this guard keeps that
+    // invariant explicit instead of assumed.
+    if (_running) {
+      _timer = Timer.periodic(_tickInterval, (_) => _tick());
+    }
   }
 
   Future<void> _pickAmbiguous(TrekCard card, CardSet? set) async {
@@ -474,6 +516,19 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
             ),
           if (_ambiguousImagePath == null && _focusIndicatorPos != null)
             _FocusReticle(center: _focusIndicatorPos!, ok: _focusIndicatorOk),
+          // Big, obvious start control instead of capturing the instant the
+          // screen opens -- frame the card first, then tap to begin.
+          if (!_running && _ambiguousImagePath == null)
+            Center(
+              child: GestureDetector(
+                onTap: _toggleRunning,
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 56),
+                ),
+              ),
+            ),
           SafeArea(
             child: Column(
               children: [
@@ -485,6 +540,11 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.white),
                         onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      IconButton(
+                        icon: Icon(_running ? Icons.pause_circle_filled : Icons.play_circle_fill, color: Colors.white),
+                        tooltip: _running ? 'Pause scanning' : 'Start scanning',
+                        onPressed: _toggleRunning,
                       ),
                       const Spacer(),
                       Text('${_addedThisSession.length} added', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
