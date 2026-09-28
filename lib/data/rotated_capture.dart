@@ -14,8 +14,12 @@ import 'package:image/image.dart' as img;
 /// Returns null if the image can't be decoded.
 Future<RecognizedText?> recognizeRotatedForYear(String imagePath, TextRecognizer recognizer) async {
   final bytes = await File(imagePath).readAsBytes();
-  final image = img.decodeImage(bytes);
-  if (image == null) return null;
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null) return null;
+  // Grayscale before cropping -- same reasoning as image_prep.dart's
+  // grayscaleCopy: strips per-channel color noise from the card's art/
+  // border so only light/dark contrast is left for ML Kit to read.
+  final image = img.grayscale(decoded);
 
   // Generous width -- the exact strip position drifts with how the card is
   // framed, and it's cheap to OCR a bit of the card's art/border alongside it.

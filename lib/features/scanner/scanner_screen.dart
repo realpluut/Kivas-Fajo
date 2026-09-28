@@ -9,6 +9,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 
 import '../../data/border_detector.dart';
 import '../../data/card_matcher.dart';
+import '../../data/image_prep.dart';
 import '../../data/models/card_set.dart';
 import '../../data/models/trek_card.dart';
 import '../../data/rotated_capture.dart';
@@ -68,17 +69,21 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   int _addedQuantity = 0;
 
   CameraController? _cameraController;
-  bool _torchOn = true;
+  // Off by default -- the flash tends to blow out glare on glossy card
+  // stock right where the title/copyright text sits, hurting OCR more than
+  // the extra light helps it. Still toggleable for a genuinely dark room.
+  bool _torchOn = false;
   final _previewKey = GlobalKey();
 
   // The ultra-wide lens (see _pickBackCamera) has a much wider field of view
   // than the standard lens it replaced, which can shrink the card -- and
   // especially its tiny copyright/year text -- too small in frame to read.
-  // Pinch-to-zoom lets you compensate, the same as bulk scan already offers.
+  // 1.5x by default brings the card closer to filling the frame out of the
+  // gate; pinch-to-zoom still lets you adjust further, same as bulk scan.
   double _minZoom = 1.0;
   double _maxZoom = 1.0;
-  double _currentZoom = 1.0;
-  double _zoomAtGestureStart = 1.0;
+  double _currentZoom = 1.5;
+  double _zoomAtGestureStart = 1.5;
 
   // Visual confirmation that a focus tap was registered and whether the
   // underlying camera call actually succeeded -- without this there's no way
@@ -256,8 +261,12 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   }
 
   Future<void> _processPhoto(String path) async {
+    String? grayPath;
     try {
-      final recognized = await _recognizer.processImage(InputImage.fromFilePath(path));
+      // Grayscale copy for OCR only -- border detection below still reads
+      // the original color photo (see image_prep.dart).
+      grayPath = await grayscaleCopy(path);
+      final recognized = await _recognizer.processImage(InputImage.fromFilePath(grayPath));
       final rotatedRecognized = await recognizeRotatedForYear(path, _recognizer);
       final borderSample = await sampleBorder(path);
       _borderDebug = borderSample.debug;
@@ -303,6 +312,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       });
     } finally {
       await _deleteQuietly(path);
+      if (grayPath != null && grayPath != path) await _deleteQuietly(grayPath);
     }
   }
 
