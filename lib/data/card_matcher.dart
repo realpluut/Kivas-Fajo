@@ -140,6 +140,9 @@ Future<CardMatchResult> matchCardFromOcr({
   RecognizedText? rotatedRecognized,
   required CardRepository repo,
   required List<String> names,
+  // Every distinct card type string in the database (e.g. "Personnel",
+  // "Equipment", "Incident") -- see the top-line-skip logic below.
+  required List<String> knownTypeLabels,
   String? detectedBorderColor,
   List<double> cornerLuminance = const [],
   // When set, only printings from this set are considered at all -- both
@@ -153,15 +156,29 @@ Future<CardMatchResult> matchCardFromOcr({
   ];
   if (allLines.isEmpty) return CardMatchResult.noText;
 
-  // Restrict name matching to lines sharing the topmost line's visual row --
-  // the card's title always sits in the name bar right under the top edge
-  // of the card. Without this, a candidate name could win (or tie) on text
-  // found anywhere on the card: a classification stamp like "MEDICAL" is a
+  // Restrict name matching to lines sharing one anchor line's visual row --
+  // without this, a candidate name could win (or tie) on text found
+  // anywhere on the card: a classification stamp like "MEDICAL" is a
   // near-total bigram subset of a real card named "Medical Kit" regardless
   // of how cleanly it's read, and lore text sometimes name-checks another
   // real card verbatim (Bochra's lore mentions "Geordi La Forge") -- both
   // can out-score a title that was only partially/noisily read.
   //
+  // The anchor is the topmost line that ISN'T just the card's type
+  // category. Personnel/Ship cards print their unique name directly at
+  // the top, so the topmost line already is the title -- but Equipment,
+  // Incident, Interrupt, Event, Dilemma, and others print the generic
+  // TYPE across the very top instead (e.g. "EQUIPMENT"), with the card's
+  // actual unique name in a separate line below the artwork. Treating
+  // that type header as the title anchor would feed only "EQUIPMENT"
+  // into matching -- which can itself coincidentally match an unrelated
+  // card whose name starts with that word (e.g. "Equipment Replicator"),
+  // while the real title several lines down never gets considered.
+  final sortedLines = [...allLines]..sort((a, b) => a.boundingBox.top.compareTo(b.boundingBox.top));
+  final anchor = sortedLines.firstWhere(
+    (l) => knownTypeLabels.every((t) => diceSimilarity(t, l.text) < 0.8),
+    orElse: () => sortedLines.first,
+  );
   // Deliberately NOT a percentage of the whole card's detected-text span:
   // that varies a lot by card type (a Personnel's photo buffers the title
   // from its lore; a Mission's rules text, sometimes two affiliations'
@@ -169,14 +186,15 @@ Future<CardMatchResult> matchCardFromOcr({
   // so a fixed percentage would reach further down in absolute terms on
   // text-heavy types -- the same failure mode this exists to prevent.
   // Instead, use this photo's own average line height as a yardstick and
-  // only keep lines within about one and a half rows of the top line, to
-  // tolerate a title bar split into a couple of OCR fragments (e.g. a
-  // small icon glyph beside the text) without reaching past the title
-  // bar's own row into whatever body text follows.
-  final minTop = allLines.map((l) => l.boundingBox.top).reduce((a, b) => a < b ? a : b);
+  // only keep lines within about one and a half rows of the anchor, to
+  // tolerate a title split into a couple of OCR fragments (e.g. a small
+  // icon glyph beside the text) without reaching past the title's own
+  // row into whatever body text follows.
   final avgLineHeight = allLines.map((l) => l.boundingBox.height).reduce((a, b) => a + b) / allLines.length;
   final rowTolerance = avgLineHeight * 1.5;
-  final titleBandLines = [for (final l in allLines) if (l.boundingBox.top <= minTop + rowTolerance) l.text];
+  final titleBandLines = [
+    for (final l in allLines) if ((l.boundingBox.top - anchor.boundingBox.top).abs() <= rowTolerance) l.text,
+  ];
   final lines = titleBandLines.isNotEmpty ? titleBandLines : [for (final l in allLines) l.text];
 
   final year = extractYear([?rotatedRecognized, recognized]);

@@ -125,3 +125,10 @@ final namesInSetProvider = FutureProvider.family<List<String>, String>((ref, set
   final cards = await ref.watch(cardRepositoryProvider).cardsInSet(setId);
   return cards.map((c) => c.name).toSet().toList();
 });
+
+/// Cached for the lifetime of the app -- lets the scanner recognize a
+/// photographed card's type-category header (e.g. "EQUIPMENT", "INCIDENT")
+/// so it isn't mistaken for the card's own unique title.
+final distinctCardTypesProvider = FutureProvider<List<String>>((ref) {
+  return ref.watch(cardRepositoryProvider).distinctCardTypes();
+});

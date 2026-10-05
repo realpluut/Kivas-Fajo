@@ -78,4 +78,18 @@ class CardRepository {
     final rows = await db.query('cards', where: 'base_name = ?', whereArgs: [baseName], orderBy: 'set_id ASC');
     return rows.map(TrekCard.fromRow).toList();
   }
+
+  /// Every distinct card type in the database (e.g. "Personnel", "Equipment",
+  /// "Incident") -- lets the scanner recognize when a photographed card's
+  /// topmost text is a generic type-category header rather than its own
+  /// unique title. Several card types (Equipment, Incident, Interrupt,
+  /// Event, Dilemma, ...) print the type across the very top of the card,
+  /// with the actual unique name in a separate line below the artwork --
+  /// unlike Personnel/Ship cards, which print the unique name directly at
+  /// the top.
+  Future<List<String>> distinctCardTypes() async {
+    final db = await _db.database;
+    final rows = await db.rawQuery("SELECT DISTINCT type FROM cards WHERE type IS NOT NULL AND type != ''");
+    return rows.map((r) => r['type'] as String).toList();
+  }
 }
