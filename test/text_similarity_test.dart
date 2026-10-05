@@ -158,6 +158,26 @@ void main() {
       expect(results.first.score, 1.0);
       expect(results.first.score - results.last.score, greaterThan(0.08));
     });
+
+    test(
+        'KNOWN GAP: pairing a classification stamp with the card\'s OWN title creates a new collision '
+        '(this is why card_matcher.dart only falls back to shortLinePairs when single-line matching '
+        'finds nothing at all -- see the "two-pass gating" test in card_matcher_test.dart)', () {
+      // "SCIENCE" + "Varel" -- a pair shortLinePairs genuinely generates
+      // from a real Varel scan -- scores 0.72 against the unrelated real
+      // card "Science Vessel", comfortably clearing minScore. Unlike the
+      // Outpost case, Varel's own title line *does* read on its own (here,
+      // cleanly, at 1.0) -- so trying pairs unconditionally would only add
+      // risk here, never benefit. This is the actual regression hit during
+      // manual testing: on a noisier frame where "Varel" itself scored
+      // lower than 1.0, "SCIENCE Varel" was briefly able to outscore it.
+      final results = bestMatches<String>(
+        ocrLines: const ['Varel', 'SCIENCE', 'SCIENCE Varel', 'Varel SCIENCE'],
+        candidates: const ['Varel', 'Science Vessel', 'Science Kit', 'Science Lab'],
+        nameOf: (n) => n,
+      );
+      expect(results.map((r) => r.value), contains('Science Vessel'));
+    });
   });
 
   group('bestMatches still finds a clean, correctly-read title', () {

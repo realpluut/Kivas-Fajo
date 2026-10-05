@@ -62,5 +62,18 @@ void main() {
     test('excludes a line from pairing with itself', () {
       expect(shortLinePairs(['Romulan']), isEmpty);
     });
+
+    test('also pairs a classification stamp with the card\'s own title (the known collision risk)', () {
+      // Confirms the regression mechanism directly: shortLinePairs has no
+      // way to know "SCIENCE" is a classification stamp and "Varel" is
+      // the real title, so it happily generates this pair too. This is
+      // exactly why matchCardFromOcr only calls shortLinePairs as a
+      // fallback when single-line matching finds nothing at all (see the
+      // "KNOWN GAP" test in text_similarity_test.dart for what this pair
+      // scores against the unrelated real card "Science Vessel") --
+      // never unconditionally, which was the actual bug hit in testing.
+      final pairs = shortLinePairs(['Varel', 'SCIENCE', 'Physics']);
+      expect(pairs, contains('SCIENCE Varel'));
+    });
   });
 }

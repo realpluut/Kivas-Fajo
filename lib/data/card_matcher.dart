@@ -204,25 +204,37 @@ Future<CardMatchResult> matchCardFromOcr({
   final filteredLines = [for (final l in allLines) if (!isStatBadgeLine(l)) l];
   final lines = filteredLines.isNotEmpty ? filteredLines : allLines;
 
-  final matchLines = [...lines, ...shortLinePairs(lines)];
-
   final year = extractYear([?rotatedRecognized, recognized]);
-  // Matches against every recognized line (plus the short-line pairs
-  // above), not just a guessed "title line" -- earlier attempts at
-  // guessing which line/row was the title (by position, or by excluding
-  // known type/franchise-logo text) kept breaking in new ways: a
-  // classification stamp ("MEDICAL"), a type header ("EQUIPMENT"), lore
-  // name-checking a different real card ("Geordi La Forge"), or even the
-  // franchise logo itself garbled just enough to dodge the exclusion list
-  // ("STEh ER" for "STAR TREK") could each end up anchoring the search on
-  // the wrong line, losing the real title entirely even when it was read
-  // perfectly. bestMatches' length ratio requirement (see
-  // text_similarity.dart) rejects all of those directly, without needing
-  // to know anything about card layout: each one is short/noisy text
-  // scoring deceptively high against a much longer candidate name purely
-  // because it's a near-complete subset of it, and a real title match is
-  // never that lopsided in length.
-  final matches = bestMatches<String>(ocrLines: matchLines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
+  // Matches against every recognized line, not just a guessed "title
+  // line" -- earlier attempts at guessing which line/row was the title
+  // (by position, or by excluding known type/franchise-logo text) kept
+  // breaking in new ways: a classification stamp ("MEDICAL"), a type
+  // header ("EQUIPMENT"), lore name-checking a different real card
+  // ("Geordi La Forge"), or even the franchise logo itself garbled just
+  // enough to dodge the exclusion list ("STEh ER" for "STAR TREK") could
+  // each end up anchoring the search on the wrong line, losing the real
+  // title entirely even when it was read perfectly. bestMatches' length
+  // ratio requirement (see text_similarity.dart) rejects all of those
+  // directly, without needing to know anything about card layout: each
+  // one is short/noisy text scoring deceptively high against a much
+  // longer candidate name purely because it's a near-complete subset of
+  // it, and a real title match is never that lopsided in length.
+  var matches = bestMatches<String>(ocrLines: lines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
+  // Only fall back to combining short-line pairs (see shortLinePairs) when
+  // single-line matching found nothing at all -- e.g. a split title like
+  // an Outpost's "Romulan" / "OUTPOST". Trying pairs unconditionally
+  // caused its own false matches: pairing a classification stamp with the
+  // card's own (even cleanly-read) title -- "SCIENCE" + "Varel" -- scores
+  // high enough against an unrelated real card with a similar name
+  // ("Science Vessel") to occasionally outscore "Varel" itself on a
+  // noisier frame, a collision that single-line matching alone would
+  // never have been vulnerable to. Gating this behind "nothing else
+  // matched" keeps the split-title fix for the cards that actually need
+  // it without opening that door for every other card.
+  if (matches.isEmpty) {
+    final pairedLines = [...lines, ...shortLinePairs(lines)];
+    matches = bestMatches<String>(ocrLines: pairedLines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
+  }
   if (matches.isEmpty) {
     return CardMatchResult(
       hasText: true,
