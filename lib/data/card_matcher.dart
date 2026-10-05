@@ -148,11 +148,27 @@ Future<CardMatchResult> matchCardFromOcr({
   // from any other set reads as no match rather than a wrong-set guess.
   String? restrictToSetId,
 }) async {
-  final lines = <String>[
-    for (final block in recognized.blocks)
-      for (final line in block.lines) line.text,
+  final allLines = [
+    for (final block in recognized.blocks) for (final line in block.lines) line,
   ];
-  if (lines.isEmpty) return CardMatchResult.noText;
+  if (allLines.isEmpty) return CardMatchResult.noText;
+
+  // Restrict name matching to the top band of recognized text -- the
+  // card's title always sits in the name bar right under the top edge of
+  // the card, well above the character art, any classification stamp, and
+  // the lore/game text further down. Without this, a candidate name could
+  // win (or tie) on text found anywhere on the card: a classification
+  // stamp like "MEDICAL" is a near-total bigram subset of a real card
+  // named "Medical Kit" regardless of how cleanly it's read, and lore text
+  // sometimes name-checks another real card verbatim (Bochra's lore
+  // mentions "Geordi La Forge") -- both can out-score a title that was
+  // only partially/noisily read. Falls back to every line if nothing
+  // clusters near the top (e.g. a tightly-cropped photo of just the title).
+  final minTop = allLines.map((l) => l.boundingBox.top).reduce((a, b) => a < b ? a : b);
+  final maxBottom = allLines.map((l) => l.boundingBox.bottom).reduce((a, b) => a > b ? a : b);
+  final titleBandBottom = minTop + (maxBottom - minTop) * 0.22;
+  final titleBandLines = [for (final l in allLines) if (l.boundingBox.top <= titleBandBottom) l.text];
+  final lines = titleBandLines.isNotEmpty ? titleBandLines : [for (final l in allLines) l.text];
 
   final year = extractYear([?rotatedRecognized, recognized]);
   final matches = bestMatches<String>(ocrLines: lines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
