@@ -26,7 +26,17 @@ double diceSimilarity(String a, String b) {
 class ScoredMatch<T> {
   final T value;
   final double score;
-  const ScoredMatch(this.value, this.score);
+  // Which OCR line produced this candidate's best score. A card's game
+  // text or lore can happen to name-check a completely different real
+  // card (e.g. Bochra's lore mentions "Geordi La Forge"), or a short
+  // classification stamp can be a near-total bigram subset of an
+  // unrelated card's full name (e.g. "MEDICAL" vs. "Medical Kit") --
+  // either can score deceptively close to the true title match despite
+  // coming from an entirely different line. Callers use this to only
+  // treat two candidates as plausible readings of the *same* title text,
+  // not just "something on this card resembles this name."
+  final String matchedLine;
+  const ScoredMatch(this.value, this.score, this.matchedLine);
 }
 
 /// Scores every candidate against every line of OCR text and returns the
@@ -43,11 +53,15 @@ List<ScoredMatch<T>> bestMatches<T>({
   for (final candidate in candidates) {
     final name = nameOf(candidate);
     var best = 0.0;
+    var bestLine = '';
     for (final line in ocrLines) {
       final score = diceSimilarity(name, line);
-      if (score > best) best = score;
+      if (score > best) {
+        best = score;
+        bestLine = line;
+      }
     }
-    if (best >= minScore) scored.add(ScoredMatch(candidate, best));
+    if (best >= minScore) scored.add(ScoredMatch(candidate, best, bestLine));
   }
   scored.sort((a, b) => b.score.compareTo(a.score));
   return scored.take(limit).toList();

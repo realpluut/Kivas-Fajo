@@ -171,9 +171,17 @@ Future<CardMatchResult> matchCardFromOcr({
   }
 
   // Keep names within a small margin of the top score -- OCR noise can put
-  // the real match just under a slightly-higher false positive.
+  // the real match just under a slightly-higher false positive -- but only
+  // when they're competing readings of the *same* OCR line as the top
+  // match. Without this, a name that happens to appear in the card's own
+  // lore/game text (Bochra's lore mentions "Geordi La Forge") or a short
+  // classification stamp that's a near-total bigram subset of an unrelated
+  // card's full name ("MEDICAL" vs. "Medical Kit") scores close enough to
+  // get treated as an alternate printing of a completely different card.
   final topScore = matches.first.score;
-  final candidateNames = matches.where((m) => m.score >= topScore - 0.08).map((m) => m.value);
+  final titleLine = matches.first.matchedLine;
+  final candidateNames =
+      matches.where((m) => m.score >= topScore - 0.08 && m.matchedLine == titleLine).map((m) => m.value);
 
   final results = <CardMatchCandidate>[];
   for (final name in candidateNames) {
