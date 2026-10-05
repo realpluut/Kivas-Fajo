@@ -48,21 +48,24 @@ class ScoredMatch<T> {
 /// Plain Dice similarity doesn't account for this: a short string that's a
 /// near-total bigram subset of a much longer one scores deceptively high
 /// regardless of whether it's actually a title -- a classification stamp
-/// like "MEDICAL" scores ~0.75 against the unrelated card "Medical Kit",
-/// a type header like "EQUIPMENT" scores high against "Equipment
-/// Replicator", lore mentioning another real card by name scores high
-/// against that card, and even a garbled misread of the franchise logo can
-/// coincidentally resemble some short card name. A genuine title read off
-/// a photo -- however noisy -- is never that lopsided in length against
-/// its real candidate, so this single, position-independent check rejects
-/// all of those cases without needing to know anything about card layout
-/// or maintain a list of boilerplate text to exclude.
+/// like "MEDICAL" scores ~0.64 length ratio against the unrelated card
+/// "Medical Kit", a stat label like "SHIELDS" scores exactly 0.7 against
+/// "Shields Up!", a type header like "EQUIPMENT" scores high against
+/// "Equipment Replicator", lore mentioning another real card by name
+/// scores high against that card, and even a garbled misread of the
+/// franchise logo can coincidentally resemble some short card name. 0.8
+/// leaves comfortable room above every one of those (0.7 would just barely
+/// let "SHIELDS" through) while a genuine title read off a photo --
+/// however noisy -- is never that lopsided in length against its real
+/// candidate, so this single, position-independent check rejects all of
+/// those cases without needing to know anything about card layout or
+/// maintain a list of boilerplate text to exclude.
 List<ScoredMatch<T>> bestMatches<T>({
   required List<String> ocrLines,
   required List<T> candidates,
   required String Function(T) nameOf,
   double minScore = 0.5,
-  double minLengthRatio = 0.7,
+  double minLengthRatio = 0.8,
   int limit = 10,
 }) {
   final scored = <ScoredMatch<T>>[];
