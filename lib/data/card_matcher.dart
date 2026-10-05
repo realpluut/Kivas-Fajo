@@ -153,21 +153,30 @@ Future<CardMatchResult> matchCardFromOcr({
   ];
   if (allLines.isEmpty) return CardMatchResult.noText;
 
-  // Restrict name matching to the top band of recognized text -- the
-  // card's title always sits in the name bar right under the top edge of
-  // the card, well above the character art, any classification stamp, and
-  // the lore/game text further down. Without this, a candidate name could
-  // win (or tie) on text found anywhere on the card: a classification
-  // stamp like "MEDICAL" is a near-total bigram subset of a real card
-  // named "Medical Kit" regardless of how cleanly it's read, and lore text
-  // sometimes name-checks another real card verbatim (Bochra's lore
-  // mentions "Geordi La Forge") -- both can out-score a title that was
-  // only partially/noisily read. Falls back to every line if nothing
-  // clusters near the top (e.g. a tightly-cropped photo of just the title).
+  // Restrict name matching to lines sharing the topmost line's visual row --
+  // the card's title always sits in the name bar right under the top edge
+  // of the card. Without this, a candidate name could win (or tie) on text
+  // found anywhere on the card: a classification stamp like "MEDICAL" is a
+  // near-total bigram subset of a real card named "Medical Kit" regardless
+  // of how cleanly it's read, and lore text sometimes name-checks another
+  // real card verbatim (Bochra's lore mentions "Geordi La Forge") -- both
+  // can out-score a title that was only partially/noisily read.
+  //
+  // Deliberately NOT a percentage of the whole card's detected-text span:
+  // that varies a lot by card type (a Personnel's photo buffers the title
+  // from its lore; a Mission's rules text, sometimes two affiliations'
+  // worth, often starts right under the title with little or no buffer),
+  // so a fixed percentage would reach further down in absolute terms on
+  // text-heavy types -- the same failure mode this exists to prevent.
+  // Instead, use this photo's own average line height as a yardstick and
+  // only keep lines within about one and a half rows of the top line, to
+  // tolerate a title bar split into a couple of OCR fragments (e.g. a
+  // small icon glyph beside the text) without reaching past the title
+  // bar's own row into whatever body text follows.
   final minTop = allLines.map((l) => l.boundingBox.top).reduce((a, b) => a < b ? a : b);
-  final maxBottom = allLines.map((l) => l.boundingBox.bottom).reduce((a, b) => a > b ? a : b);
-  final titleBandBottom = minTop + (maxBottom - minTop) * 0.22;
-  final titleBandLines = [for (final l in allLines) if (l.boundingBox.top <= titleBandBottom) l.text];
+  final avgLineHeight = allLines.map((l) => l.boundingBox.height).reduce((a, b) => a + b) / allLines.length;
+  final rowTolerance = avgLineHeight * 1.5;
+  final titleBandLines = [for (final l in allLines) if (l.boundingBox.top <= minTop + rowTolerance) l.text];
   final lines = titleBandLines.isNotEmpty ? titleBandLines : [for (final l in allLines) l.text];
 
   final year = extractYear([?rotatedRecognized, recognized]);
