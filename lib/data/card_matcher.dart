@@ -96,6 +96,22 @@ int? _firstYear(String text) {
   return null;
 }
 
+final _statBadgePattern = RegExp(r'^(shields|weapons|range)\s*\d*$', caseSensitive: false);
+
+/// True for a Ship/Facility stat badge line ("SHIELDS 32", "WEAPONS 9",
+/// "RANGE 7", or the bare label with no number) -- never a card's own
+/// title. The label word alone being a near-total bigram subset of a
+/// longer unrelated card name is exactly the failure bestMatches' length-
+/// ratio gate exists to catch (see its doc comment), but the digits can
+/// coincidentally pad the line out to the *same* length as that unrelated
+/// name -- "SHIELDS 32" and the real card "Shields Up!" both normalize to
+/// 10 characters -- which defeats a length-based check entirely. Unlike a
+/// type label or franchise logo (free text that OCR noise can garble into
+/// dodging a fuzzy exclusion list), this is a fixed, game-defined print
+/// format with no real title ever shaped like it, so it can be recognized
+/// and dropped outright instead.
+bool isStatBadgeLine(String line) => _statBadgePattern.hasMatch(line.trim());
+
 /// The first plausible copyright/print year found across [passes] (Star Trek
 /// CCG 1st Edition ran 1994-2029ish) -- a proxy for the small copyright line
 /// printed on every card, used to prefer the matching printing/set when a
@@ -148,10 +164,18 @@ Future<CardMatchResult> matchCardFromOcr({
   // from any other set reads as no match rather than a wrong-set guess.
   String? restrictToSetId,
 }) async {
-  final lines = <String>[
+  final allLines = <String>[
     for (final block in recognized.blocks) for (final line in block.lines) line.text,
   ];
-  if (lines.isEmpty) return CardMatchResult.noText;
+  if (allLines.isEmpty) return CardMatchResult.noText;
+
+  // Ship/Facility stat badges ("SHIELDS <number>", "WEAPONS <number>",
+  // "RANGE <number>") can coincidentally come out the exact same length
+  // as an unrelated real card name -- see isStatBadgeLine's doc comment --
+  // so they're dropped outright before matching rather than relying on a
+  // length check to catch them.
+  final filteredLines = [for (final l in allLines) if (!isStatBadgeLine(l)) l];
+  final lines = filteredLines.isNotEmpty ? filteredLines : allLines;
 
   final year = extractYear([?rotatedRecognized, recognized]);
   // Matches against every recognized line, not just a guessed "title line"

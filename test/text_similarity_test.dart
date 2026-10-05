@@ -94,6 +94,24 @@ void main() {
       expect(results.map((r) => r.value), isNot(contains('Shields Up!')));
     });
 
+    test(
+        'KNOWN GAP: a merged stat badge can coincidentally match the length of an unrelated name '
+        '(this is why card_matcher.dart drops stat badge lines before calling bestMatches at all -- '
+        'see isStatBadgeLine in card_matcher_test.dart)', () {
+      // "SHIELDS 32" and "Shields Up!" both normalize to exactly 10
+      // characters, so no length-ratio threshold can tell them apart --
+      // bestMatches alone still matches this. Asserting that here (rather
+      // than pretending it doesn't) is the point: it documents why
+      // isStatBadgeLine has to filter this out upstream, instead of this
+      // function quietly growing a second, overlapping defense.
+      final results = bestMatches<String>(
+        ocrLines: const ['Federation Outpost', 'SHIELDS 32'],
+        candidates: const ['Federation Outpost', 'Shields Up!'],
+        nameOf: (n) => n,
+      );
+      expect(results.map((r) => r.value), contains('Shields Up!'));
+    });
+
     test('a wrapped lore line sharing a distinctive word with an unrelated mission (Q2 / Investigate Time Continuum)', () {
       final results = bestMatches<String>(
         ocrLines: const [
