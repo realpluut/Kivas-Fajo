@@ -341,15 +341,11 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
       final names = setFilterId == null
           ? await ref.read(distinctCardNamesProvider.future)
           : await ref.read(namesInSetProvider(setFilterId).future);
-      final types = await ref.read(distinctCardTypesProvider.future);
-      final propertyLogos = await ref.read(distinctPropertyLogosProvider.future);
       final result = await matchCardFromOcr(
         recognized: recognized,
         rotatedRecognized: rotatedRecognized,
         repo: ref.read(cardRepositoryProvider),
         names: names,
-        knownTypeLabels: types,
-        knownPropertyLogos: propertyLogos,
         detectedBorderColor: borderSample.color,
         cornerLuminance: borderSample.cornerLuminance,
         restrictToSetId: setFilterId,

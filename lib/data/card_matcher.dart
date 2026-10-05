@@ -140,13 +140,6 @@ Future<CardMatchResult> matchCardFromOcr({
   RecognizedText? rotatedRecognized,
   required CardRepository repo,
   required List<String> names,
-  // Every distinct card type string in the database (e.g. "Personnel",
-  // "Equipment", "Incident") -- see the boilerplate-exclusion logic below.
-  required List<String> knownTypeLabels,
-  // Every distinct property-logo string in the database (e.g. "Star Trek:
-  // The Next Generation") -- same idea, for the franchise logo printed in
-  // the same header area as the type.
-  required List<String> knownPropertyLogos,
   String? detectedBorderColor,
   List<double> cornerLuminance = const [],
   // When set, only printings from this set are considered at all -- both
@@ -155,66 +148,26 @@ Future<CardMatchResult> matchCardFromOcr({
   // from any other set reads as no match rather than a wrong-set guess.
   String? restrictToSetId,
 }) async {
-  final allLines = [
-    for (final block in recognized.blocks) for (final line in block.lines) line,
+  final lines = <String>[
+    for (final block in recognized.blocks) for (final line in block.lines) line.text,
   ];
-  if (allLines.isEmpty) return CardMatchResult.noText;
-
-  // Restrict name matching to lines sharing one anchor line's visual row --
-  // without this, a candidate name could win (or tie) on text found
-  // anywhere on the card: a classification stamp like "MEDICAL" is a
-  // near-total bigram subset of a real card named "Medical Kit" regardless
-  // of how cleanly it's read, and lore text sometimes name-checks another
-  // real card verbatim (Bochra's lore mentions "Geordi La Forge") -- both
-  // can out-score a title that was only partially/noisily read.
-  //
-  // First, drop every line that's just known card-chrome boilerplate --
-  // not the card's own unique title under any circumstance -- so it can
-  // never become the anchor *or* get swept back into the band for sitting
-  // on the same row as whatever anchor is chosen. Every card's header
-  // prints its type (e.g. "EQUIPMENT") and its franchise logo, split
-  // across its own line(s) ("STAR TREK" / "THE NEXT GENERATION") --
-  // "Star Trek" itself is universal, so it's excluded outright, and each
-  // known property logo's own words (e.g. "The Next Generation", "Deep
-  // Space Nine") are split out and excluded too, since the card prints
-  // them as a separate line from "Star Trek", not the combined string.
-  final boilerplate = {
-    'star trek',
-    ...knownTypeLabels,
-    for (final logo in knownPropertyLogos) ...logo.split(RegExp(r'[:\-]')).map((s) => s.trim()).where((s) => s.isNotEmpty),
-  };
-  final contentLines = [
-    for (final l in allLines) if (boilerplate.every((b) => diceSimilarity(b, l.text) < 0.8)) l,
-  ];
-  final usableLines = contentLines.isNotEmpty ? contentLines : allLines;
-
-  // Personnel/Ship cards print their unique name directly at the top, so
-  // after the filtering above, the topmost remaining line already is the
-  // title. Equipment, Incident, Interrupt, Event, Dilemma, and others
-  // print their unique name in a separate line below the artwork instead
-  // -- but with the type/logo header already filtered out, the topmost
-  // *remaining* line lands there correctly either way.
-  final sortedLines = [...usableLines]..sort((a, b) => a.boundingBox.top.compareTo(b.boundingBox.top));
-  final anchor = sortedLines.first;
-  // Deliberately NOT a percentage of the whole card's detected-text span:
-  // that varies a lot by card type (a Personnel's photo buffers the title
-  // from its lore; a Mission's rules text, sometimes two affiliations'
-  // worth, often starts right under the title with little or no buffer),
-  // so a fixed percentage would reach further down in absolute terms on
-  // text-heavy types -- the same failure mode this exists to prevent.
-  // Instead, use this photo's own average line height as a yardstick and
-  // only keep lines within about one and a half rows of the anchor, to
-  // tolerate a title split into a couple of OCR fragments (e.g. a small
-  // icon glyph beside the text) without reaching past the title's own
-  // row into whatever body text follows.
-  final avgLineHeight = allLines.map((l) => l.boundingBox.height).reduce((a, b) => a + b) / allLines.length;
-  final rowTolerance = avgLineHeight * 1.5;
-  final titleBandLines = [
-    for (final l in usableLines) if ((l.boundingBox.top - anchor.boundingBox.top).abs() <= rowTolerance) l.text,
-  ];
-  final lines = titleBandLines.isNotEmpty ? titleBandLines : [for (final l in allLines) l.text];
+  if (lines.isEmpty) return CardMatchResult.noText;
 
   final year = extractYear([?rotatedRecognized, recognized]);
+  // Matches against every recognized line, not just a guessed "title line"
+  // -- earlier attempts at guessing which line/row was the title (by
+  // position, or by excluding known type/franchise-logo text) kept
+  // breaking in new ways: a classification stamp ("MEDICAL"), a type
+  // header ("EQUIPMENT"), lore name-checking a different real card
+  // ("Geordi La Forge"), or even the franchise logo itself garbled just
+  // enough to dodge the exclusion list ("STEh ER" for "STAR TREK") could
+  // each end up anchoring the search on the wrong line, losing the real
+  // title entirely even when it was read perfectly. bestMatches' length
+  // ratio requirement (see text_similarity.dart) rejects all of those
+  // directly, without needing to know anything about card layout: each
+  // one is short/noisy text scoring deceptively high against a much
+  // longer candidate name purely because it's a near-complete subset of
+  // it, and a real title match is never that lopsided in length.
   final matches = bestMatches<String>(ocrLines: lines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
   if (matches.isEmpty) {
     return CardMatchResult(
