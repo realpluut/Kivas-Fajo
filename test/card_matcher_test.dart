@@ -33,4 +33,34 @@ void main() {
       expect(isStatBadgeLine(''), isFalse);
     });
   });
+
+  group('shortLinePairs', () {
+    test('combines distant short lines in both orders, letting a split title recombine', () {
+      // Actual raw OCR lines read off a Romulan Outpost: the affiliation
+      // ("Romulan") prints at the top, "OUTPOST" near the bottom, with
+      // lore/game text in between -- the real name "Romulan Outpost"
+      // never appears as a single line anywhere on the card.
+      final lines = [
+        'Romulan',
+        'STEHazR',
+        'THE NEXT GENEHATIDN',
+        'Ronulus is one of the two homeworlds for the Romulans.',
+        'Ihe Romulan Stor Empire establishes outposts throughout',
+        'its teritory.',
+        'Seed one if playing Romulan OR build later at ony',
+        'location where a Romulan ENGINEER is present.',
+        'OUTPOST',
+      ];
+      final pairs = shortLinePairs(lines);
+      expect(pairs, contains('Romulan OUTPOST'));
+      expect(pairs, contains('OUTPOST Romulan'));
+      // The long lore/game-text lines never get paired -- only noise and
+      // extra comparisons would come from combining whole sentences.
+      expect(pairs.any((p) => p.contains('homeworlds')), isFalse);
+    });
+
+    test('excludes a line from pairing with itself', () {
+      expect(shortLinePairs(['Romulan']), isEmpty);
+    });
+  });
 }

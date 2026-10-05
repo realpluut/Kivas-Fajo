@@ -127,6 +127,37 @@ void main() {
       expect(results.map((r) => r.value), contains('Q2'));
       expect(results.map((r) => r.value), isNot(contains('Investigate Time Continuum')));
     });
+
+    test(
+        'a split title recombined via shortLinePairs beats a franchise-logo coincidence '
+        '(Romulan Outpost / The Next Emanation)', () {
+      // Without the "Romulan OUTPOST" pair (see card_matcher_test.dart's
+      // shortLinePairs test, which confirms this is what actually gets
+      // generated from these lines), "The Next Emanation" wins here --
+      // its name shares the "THE NEXT" phrase with the garbled franchise
+      // logo line, and nothing else clears the length-ratio gate at all.
+      // bestMatches alone still returns both (up to `limit` candidates
+      // regardless of score gap) -- it's matchCardFromOcr's "within a
+      // small margin of the top score" filter, one level up, that drops
+      // "The Next Emanation" from the final result once "Romulan
+      // Outpost" scores decisively higher. What matters here is that the
+      // real title now wins outright instead of never being considered.
+      final results = bestMatches<String>(
+        ocrLines: const [
+          'Romulan',
+          'STEHazR',
+          'THE NEXT GENEHATIDN',
+          'Ronulus is one of the two homeworlds for the Romulans.',
+          'OUTPOST',
+          'Romulan OUTPOST', // what shortLinePairs adds for this card
+        ],
+        candidates: const ['Romulan Outpost', 'The Next Emanation'],
+        nameOf: (n) => n,
+      );
+      expect(results.first.value, 'Romulan Outpost');
+      expect(results.first.score, 1.0);
+      expect(results.first.score - results.last.score, greaterThan(0.08));
+    });
   });
 
   group('bestMatches still finds a clean, correctly-read title', () {
