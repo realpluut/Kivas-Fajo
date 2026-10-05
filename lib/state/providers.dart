@@ -132,3 +132,11 @@ final namesInSetProvider = FutureProvider.family<List<String>, String>((ref, set
 final distinctCardTypesProvider = FutureProvider<List<String>>((ref) {
   return ref.watch(cardRepositoryProvider).distinctCardTypes();
 });
+
+/// Cached for the lifetime of the app -- lets the scanner recognize the
+/// franchise logo printed in the same header area as the type (e.g. "Star
+/// Trek: The Next Generation") so it isn't mistaken for the card's own
+/// unique title either.
+final distinctPropertyLogosProvider = FutureProvider<List<String>>((ref) {
+  return ref.watch(cardRepositoryProvider).distinctPropertyLogos();
+});

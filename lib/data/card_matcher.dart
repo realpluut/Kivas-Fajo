@@ -141,8 +141,12 @@ Future<CardMatchResult> matchCardFromOcr({
   required CardRepository repo,
   required List<String> names,
   // Every distinct card type string in the database (e.g. "Personnel",
-  // "Equipment", "Incident") -- see the top-line-skip logic below.
+  // "Equipment", "Incident") -- see the boilerplate-exclusion logic below.
   required List<String> knownTypeLabels,
+  // Every distinct property-logo string in the database (e.g. "Star Trek:
+  // The Next Generation") -- same idea, for the franchise logo printed in
+  // the same header area as the type.
+  required List<String> knownPropertyLogos,
   String? detectedBorderColor,
   List<double> cornerLuminance = const [],
   // When set, only printings from this set are considered at all -- both
@@ -164,21 +168,34 @@ Future<CardMatchResult> matchCardFromOcr({
   // real card verbatim (Bochra's lore mentions "Geordi La Forge") -- both
   // can out-score a title that was only partially/noisily read.
   //
-  // The anchor is the topmost line that ISN'T just the card's type
-  // category. Personnel/Ship cards print their unique name directly at
-  // the top, so the topmost line already is the title -- but Equipment,
-  // Incident, Interrupt, Event, Dilemma, and others print the generic
-  // TYPE across the very top instead (e.g. "EQUIPMENT"), with the card's
-  // actual unique name in a separate line below the artwork. Treating
-  // that type header as the title anchor would feed only "EQUIPMENT"
-  // into matching -- which can itself coincidentally match an unrelated
-  // card whose name starts with that word (e.g. "Equipment Replicator"),
-  // while the real title several lines down never gets considered.
-  final sortedLines = [...allLines]..sort((a, b) => a.boundingBox.top.compareTo(b.boundingBox.top));
-  final anchor = sortedLines.firstWhere(
-    (l) => knownTypeLabels.every((t) => diceSimilarity(t, l.text) < 0.8),
-    orElse: () => sortedLines.first,
-  );
+  // First, drop every line that's just known card-chrome boilerplate --
+  // not the card's own unique title under any circumstance -- so it can
+  // never become the anchor *or* get swept back into the band for sitting
+  // on the same row as whatever anchor is chosen. Every card's header
+  // prints its type (e.g. "EQUIPMENT") and its franchise logo, split
+  // across its own line(s) ("STAR TREK" / "THE NEXT GENERATION") --
+  // "Star Trek" itself is universal, so it's excluded outright, and each
+  // known property logo's own words (e.g. "The Next Generation", "Deep
+  // Space Nine") are split out and excluded too, since the card prints
+  // them as a separate line from "Star Trek", not the combined string.
+  final boilerplate = {
+    'star trek',
+    ...knownTypeLabels,
+    for (final logo in knownPropertyLogos) ...logo.split(RegExp(r'[:\-]')).map((s) => s.trim()).where((s) => s.isNotEmpty),
+  };
+  final contentLines = [
+    for (final l in allLines) if (boilerplate.every((b) => diceSimilarity(b, l.text) < 0.8)) l,
+  ];
+  final usableLines = contentLines.isNotEmpty ? contentLines : allLines;
+
+  // Personnel/Ship cards print their unique name directly at the top, so
+  // after the filtering above, the topmost remaining line already is the
+  // title. Equipment, Incident, Interrupt, Event, Dilemma, and others
+  // print their unique name in a separate line below the artwork instead
+  // -- but with the type/logo header already filtered out, the topmost
+  // *remaining* line lands there correctly either way.
+  final sortedLines = [...usableLines]..sort((a, b) => a.boundingBox.top.compareTo(b.boundingBox.top));
+  final anchor = sortedLines.first;
   // Deliberately NOT a percentage of the whole card's detected-text span:
   // that varies a lot by card type (a Personnel's photo buffers the title
   // from its lore; a Mission's rules text, sometimes two affiliations'
@@ -193,7 +210,7 @@ Future<CardMatchResult> matchCardFromOcr({
   final avgLineHeight = allLines.map((l) => l.boundingBox.height).reduce((a, b) => a + b) / allLines.length;
   final rowTolerance = avgLineHeight * 1.5;
   final titleBandLines = [
-    for (final l in allLines) if ((l.boundingBox.top - anchor.boundingBox.top).abs() <= rowTolerance) l.text,
+    for (final l in usableLines) if ((l.boundingBox.top - anchor.boundingBox.top).abs() <= rowTolerance) l.text,
   ];
   final lines = titleBandLines.isNotEmpty ? titleBandLines : [for (final l in allLines) l.text];
 
