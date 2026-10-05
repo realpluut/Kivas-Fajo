@@ -63,17 +63,65 @@ void main() {
       expect(shortLinePairs(['Romulan']), isEmpty);
     });
 
-    test('also pairs a classification stamp with the card\'s own title (the known collision risk)', () {
-      // Confirms the regression mechanism directly: shortLinePairs has no
-      // way to know "SCIENCE" is a classification stamp and "Varel" is
-      // the real title, so it happily generates this pair too. This is
-      // exactly why matchCardFromOcr only calls shortLinePairs as a
-      // fallback when single-line matching finds nothing at all (see the
-      // "KNOWN GAP" test in text_similarity_test.dart for what this pair
-      // scores against the unrelated real card "Science Vessel") --
-      // never unconditionally, which was the actual bug hit in testing.
+    test('pairs a classification stamp with the card\'s own title when given one (the known collision risk)', () {
+      // shortLinePairs itself has no way to know "SCIENCE" is a
+      // classification stamp and "Varel" is the real title -- it happily
+      // generates this pair (see the "KNOWN GAP" test in
+      // text_similarity_test.dart for what it scores against the
+      // unrelated real card "Science Vessel"). This is exactly why
+      // matchCardFromOcr filters classification stamps out of the pool
+      // *before* calling shortLinePairs in its fallback path, rather than
+      // relying on shortLinePairs itself to know better -- see
+      // isClassificationStampLine below.
       final pairs = shortLinePairs(['Varel', 'SCIENCE', 'Physics']);
       expect(pairs, contains('SCIENCE Varel'));
+    });
+  });
+
+  group('isClassificationStampLine', () {
+    test('matches the four known classification stamps', () {
+      expect(isClassificationStampLine('SCIENCE'), isTrue);
+      expect(isClassificationStampLine('MEDICAL'), isTrue);
+      expect(isClassificationStampLine('SECURITY'), isTrue);
+      expect(isClassificationStampLine('ENGINEER'), isTrue);
+      expect(isClassificationStampLine('science'), isTrue);
+    });
+
+    test('does not match real card titles that start with the same word', () {
+      expect(isClassificationStampLine('Science Vessel'), isFalse);
+      expect(isClassificationStampLine('Medical Kit'), isFalse);
+      expect(isClassificationStampLine('Security Briefing'), isFalse);
+      expect(isClassificationStampLine('Engineering Kit'), isFalse);
+    });
+
+    test('does not match unrelated text', () {
+      expect(isClassificationStampLine('Varel'), isFalse);
+      expect(isClassificationStampLine('Tomek'), isFalse);
+      expect(isClassificationStampLine(''), isFalse);
+    });
+
+    test('filtering classification stamps before pairing removes the collision pair', () {
+      // The actual fix: matchCardFromOcr's fallback path filters with
+      // this before calling shortLinePairs, so "SCIENCE Varel" is never
+      // generated in the first place -- unlike the raw shortLinePairs
+      // test above, which deliberately shows what happens without it.
+      final lines = ['Varel', 'SCIENCE', 'Physics'];
+      final pairableLines = [for (final l in lines) if (!isClassificationStampLine(l)) l];
+      final pairs = shortLinePairs(pairableLines);
+      expect(pairs, isNot(contains('SCIENCE Varel')));
+      expect(pairs, isNot(contains('Varel SCIENCE')));
+    });
+
+    test('a Tomek/Engineer scan no longer produces the "ENGINEER Tomek" collision pair', () {
+      // The real second case reported: Tomek is Engineer-classification,
+      // and "ENGINEER" + "Tomek" scores well against the unrelated real
+      // card "Engineering Kit" the same way "SCIENCE" + "Varel" did
+      // against "Science Vessel".
+      final lines = ['Tomek', 'ENGINEER', 'Astrophysics'];
+      final pairableLines = [for (final l in lines) if (!isClassificationStampLine(l)) l];
+      final pairs = shortLinePairs(pairableLines);
+      expect(pairs, isNot(contains('ENGINEER Tomek')));
+      expect(pairs, isNot(contains('Tomek ENGINEER')));
     });
   });
 }

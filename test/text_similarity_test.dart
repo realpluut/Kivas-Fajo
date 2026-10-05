@@ -178,6 +178,21 @@ void main() {
       );
       expect(results.map((r) => r.value), contains('Science Vessel'));
     });
+
+    test(
+        'the same classification-pairing collision for a second classification word '
+        '(Tomek / Engineering Kit)', () {
+      // Same mechanism, a different classification stamp and a different
+      // card -- confirms this isn't specific to "Science"/"Varel", but
+      // the whole class of classification-stamp word (Science, Medical,
+      // Security, Engineer; see isClassificationStampLine).
+      final results = bestMatches<String>(
+        ocrLines: const ['Tomek', 'ENGINEER', 'ENGINEER Tomek', 'Tomek ENGINEER'],
+        candidates: const ['Tomek', 'Engineering Kit', 'Engineering PADD', 'Engineering Tricorder'],
+        nameOf: (n) => n,
+      );
+      expect(results.map((r) => r.value), contains('Engineering Kit'));
+    });
   });
 
   group('bestMatches still finds a clean, correctly-read title', () {

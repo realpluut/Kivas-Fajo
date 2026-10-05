@@ -112,6 +112,25 @@ final _statBadgePattern = RegExp(r'^(shields|weapons|range)\s*\d*$', caseSensiti
 /// and dropped outright instead.
 bool isStatBadgeLine(String line) => _statBadgePattern.hasMatch(line.trim());
 
+// The game's personnel classification stamp is one of exactly these four
+// words (confirmed against the wiki's own category structure -- Command,
+// Diplomacy, etc. aren't classifications in this game, just skills/roles),
+// always printed cleanly on its own as a single bold word, never garbled
+// the way the franchise logo sometimes is.
+final _classificationStampPattern = RegExp(r'^(science|medical|security|engineer)$', caseSensitive: false);
+
+/// True for a personnel classification stamp line ("SCIENCE", "MEDICAL",
+/// "SECURITY", "ENGINEER") -- never a card's own title. Reading it alone
+/// is already safe (bestMatches' length-ratio gate rejects e.g. "MEDICAL"
+/// against the much longer "Medical Kit"), but pairing it with another
+/// short line via shortLinePairs is not: "SCIENCE" + the card's own title
+/// "Varel" scores 0.72 against the unrelated real card "Science Vessel",
+/// and "ENGINEER" + "Tomek" similarly collides with "Engineering Kit" --
+/// both real cards whose names start with the classification word. So
+/// this is excluded from the pool shortLinePairs draws from, not just
+/// from being treated as a title on its own.
+bool isClassificationStampLine(String line) => _classificationStampPattern.hasMatch(line.trim());
+
 /// Every short line from [lines] concatenated with every other short line,
 /// in both orders. Some card types print their unique name split across
 /// two distant lines instead of one: an Outpost shows its affiliation at
@@ -232,7 +251,12 @@ Future<CardMatchResult> matchCardFromOcr({
   // matched" keeps the split-title fix for the cards that actually need
   // it without opening that door for every other card.
   if (matches.isEmpty) {
-    final pairedLines = [...lines, ...shortLinePairs(lines)];
+    // Even in the fallback, a classification stamp never belongs in a
+    // pair -- it's not a piece of a split title the way "Romulan" and
+    // "OUTPOST" are, just a word that happens to prefix-match unrelated
+    // real cards (see isClassificationStampLine).
+    final pairableLines = [for (final l in lines) if (!isClassificationStampLine(l)) l];
+    final pairedLines = [...lines, ...shortLinePairs(pairableLines)];
     matches = bestMatches<String>(ocrLines: pairedLines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
   }
   if (matches.isEmpty) {
