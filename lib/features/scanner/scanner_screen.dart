@@ -297,6 +297,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         return;
       }
       if (result.autoPick != null) {
+        _result = result;
         await _addCard(result.autoPick!.card, result.autoPick!.set);
         return;
       }
@@ -384,6 +385,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               quantity: _addedQuantity,
               onScanAgain: _openCamera,
               onDone: _backToIdle,
+              result: _result,
+              borderDebug: _borderDebug,
             ),
           _ScanState.results => _ResultsView(
               matchedName: _result?.matchedName ?? '',
@@ -660,45 +663,56 @@ class _AddedView extends StatelessWidget {
   final int quantity;
   final VoidCallback onScanAgain;
   final VoidCallback onDone;
+  final CardMatchResult? result;
+  final String? borderDebug;
   const _AddedView({
     required this.card,
     required this.set,
     required this.quantity,
     required this.onScanAgain,
     required this.onDone,
+    this.result,
+    this.borderDebug,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.check_circle, size: 56, color: Colors.green),
-          const SizedBox(height: 16),
-          if (card.imageUrl != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(imageUrl: card.imageUrl!, width: 120),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle, size: 56, color: Colors.green),
+            const SizedBox(height: 16),
+            if (card.imageUrl != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(imageUrl: card.imageUrl!, width: 120),
+              ),
+            const SizedBox(height: 16),
+            Text(card.name, style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
+            if (set != null) Text(set!.name, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 8),
+            Text('You now own $quantity', style: Theme.of(context).textTheme.bodyLarge),
+            const SizedBox(height: 24),
+            FilledButton.icon(onPressed: onScanAgain, icon: const Icon(Icons.camera_alt), label: const Text('Scan Another')),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => CardDetailScreen(cardId: card.id)));
+              },
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('View Card'),
             ),
-          const SizedBox(height: 16),
-          Text(card.name, style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
-          if (set != null) Text(set!.name, style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 8),
-          Text('You now own $quantity', style: Theme.of(context).textTheme.bodyLarge),
-          const SizedBox(height: 24),
-          FilledButton.icon(onPressed: onScanAgain, icon: const Icon(Icons.camera_alt), label: const Text('Scan Another')),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => CardDetailScreen(cardId: card.id)));
-            },
-            icon: const Icon(Icons.open_in_new),
-            label: const Text('View Card'),
-          ),
-          const SizedBox(height: 8),
-          TextButton(onPressed: onDone, child: const Text('Done')),
-        ],
+            const SizedBox(height: 8),
+            TextButton(onPressed: onDone, child: const Text('Done')),
+            // Available on a confident auto-pick too, not just errors/
+            // ambiguous matches -- lets you spot-check border/year
+            // detection (e.g. while verifying a detection fix) without
+            // needing a scan to go wrong first.
+            if (result != null) _ScanDiagnostics(result: result!, borderDebug: borderDebug),
+          ],
+        ),
       ),
     );
   }

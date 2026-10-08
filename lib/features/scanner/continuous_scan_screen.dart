@@ -382,8 +382,13 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
         }
       } else {
         final pick = result.autoPick!;
+        // Shown on every confident add, not just "no match" -- lets you
+        // spot-check border/year detection while bulk-scanning a whole
+        // stack, instead of only finding out something's off once a scan
+        // actually fails.
+        final signals = 'year: ${result.detectedYear ?? "none"}, border: ${result.detectedBorderColor ?? "none"}';
         if (pick.card.id == _lastAddedCardId) {
-          setState(() => _status = 'Still showing "${pick.card.name}" -- already added.');
+          setState(() => _status = 'Still showing "${pick.card.name}" -- already added. [$signals]');
         } else {
           final updated = await ref.read(collectionRepositoryProvider).incrementOwned(pick.card.id);
           ref.read(collectionRevisionProvider.notifier).state++;
@@ -392,7 +397,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
           _beep('sounds/beep_success.wav');
           setState(() {
             _addedThisSession.insert(0, pick.card);
-            _status = 'Added "${pick.card.name}" -- now own ${updated.quantity}.';
+            _status = 'Added "${pick.card.name}" -- now own ${updated.quantity}. [$signals]';
           });
         }
       }
