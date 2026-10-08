@@ -121,7 +121,13 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   /// OK?" confirm/retake screen between the shutter and actually reading
   /// the card. Owning the capture ourselves means tapping the shutter goes
   /// straight into analysis.
-  Future<void> _openCamera() async {
+  ///
+  /// [autoCapture] skips the manual shutter tap entirely: used for "Scan
+  /// Another" specifically, where the camera's framing/position is already
+  /// established from the previous card (typically a fixed rig/tray, not
+  /// hand-held) and only the card itself needs swapping -- not the very
+  /// first "Take Photo" from idle, where that framing hasn't happened yet.
+  Future<void> _openCamera({bool autoCapture = false}) async {
     setState(() {
       _state = _ScanState.capturing;
       _errorMessage = null;
@@ -166,6 +172,18 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
       if (!mounted) return;
       setState(() => _cameraController = controller);
+
+      if (autoCapture) {
+        // Give autofocus/exposure a moment to settle on the newly-placed
+        // card before snapping -- right after initialize() the lens is
+        // often still racking focus from wherever it last was. If the
+        // user cancels or fires the shutter manually during this wait,
+        // _cameraController is already null by the time it elapses, so
+        // this backs off instead of double-capturing.
+        await Future.delayed(const Duration(milliseconds: 900));
+        if (!mounted || _cameraController == null) return;
+        await _capture();
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -174,6 +192,9 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       });
     }
   }
+
+  /// "Scan Another" specifically -- see _openCamera's autoCapture doc.
+  Future<void> _scanAnother() => _openCamera(autoCapture: true);
 
   Future<void> _toggleTorch() async {
     final controller = _cameraController;
@@ -383,7 +404,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               card: _addedCard!,
               set: _addedSet,
               quantity: _addedQuantity,
-              onScanAgain: _openCamera,
+              onScanAgain: _scanAnother,
               onDone: _backToIdle,
               result: _result,
               borderDebug: _borderDebug,
@@ -393,7 +414,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               detectedYear: _result?.detectedYear,
               detectedBorderColor: _result?.detectedBorderColor,
               candidates: _result?.candidates ?? const [],
-              onScanAgain: _openCamera,
+              onScanAgain: _scanAnother,
               onPick: _addCard,
               onDone: _backToIdle,
               result: _result,
