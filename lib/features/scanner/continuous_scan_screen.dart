@@ -752,7 +752,7 @@ class _AmbiguousPicker extends StatelessWidget {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (c.borderContradicted)
+                        if (c.contradicted)
                           const Icon(Icons.cancel, color: Colors.red, size: 18)
                         else if (c.confidence > 0)
                           Icon(Icons.check_circle, color: c.confidence == 2 ? Colors.green : Colors.amber, size: 18),

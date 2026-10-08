@@ -793,7 +793,7 @@ class _ResultsView extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (c.borderContradicted)
+                    if (c.contradicted)
                       const Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.cancel, color: Colors.red, size: 20))
                     else if (c.confidence > 0)
                       Padding(

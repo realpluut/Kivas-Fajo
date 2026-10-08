@@ -124,4 +124,22 @@ void main() {
       expect(pairs, isNot(contains('Tomek ENGINEER')));
     });
   });
+
+  group('isErrataRarity', () {
+    test('matches every observed errata rarity string, including scrape typos', () {
+      expect(isErrataRarity('Physical Errata'), isTrue);
+      expect(isErrataRarity('Virtual Errata'), isTrue);
+      expect(isErrataRarity('Errata'), isTrue);
+      // A real scrape artifact seen in the data -- matching on the
+      // "errata" substring catches it without needing to fix every typo.
+      expect(isErrataRarity('Pgtsical Errata'), isTrue);
+    });
+
+    test('does not match ordinary rarities', () {
+      expect(isErrataRarity('Common'), isFalse);
+      expect(isErrataRarity('Rare'), isFalse);
+      expect(isErrataRarity('Uncommon'), isFalse);
+      expect(isErrataRarity(null), isFalse);
+    });
+  });
 }

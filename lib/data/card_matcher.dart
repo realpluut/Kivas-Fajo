@@ -14,19 +14,25 @@ class CardMatchCandidate {
   final bool yearMatches;
   final bool borderMatches;
 
-  /// True when this set's border color is *known* and disagrees with what
-  /// was detected on the photo -- e.g. the set is on record as black-bordered
-  /// but the photo read white. Unlike simply not matching (which just means
-  /// no data either way), a known contradiction actively rules the printing
-  /// out.
-  final bool borderContradicted;
+  /// True when something *known* about this printing disagrees with what
+  /// the photo actually showed -- either its border color is on record and
+  /// disagrees with what was detected (e.g. set known black-bordered, photo
+  /// read white), or it's an Errata-rarity printing but the photo clearly
+  /// read a printed year. Errata reprints carry plain reference text on
+  /// their border instead of a copyright year (see
+  /// https://cardguide.fandom.com/wiki/Latinum_Payoff_(Errata) for an
+  /// example), so successfully reading *any* year off the photo is itself
+  /// proof it isn't the Errata printing. Unlike simply not matching (which
+  /// just means no data either way), a known contradiction actively rules
+  /// the printing out.
+  final bool contradicted;
 
   const CardMatchCandidate({
     required this.card,
     required this.set,
     required this.yearMatches,
     required this.borderMatches,
-    required this.borderContradicted,
+    required this.contradicted,
   });
 
   /// How many independent signals (year, border) confirm this printing.
@@ -130,6 +136,15 @@ final _classificationStampPattern = RegExp(r'^(science|medical|security|engineer
 /// this is excluded from the pool shortLinePairs draws from, not just
 /// from being treated as a title on its own.
 bool isClassificationStampLine(String line) => _classificationStampPattern.hasMatch(line.trim());
+
+/// True for an Errata-rarity printing ("Physical Errata", "Virtual Errata",
+/// bare "Errata", and scrape typos like "Pgtsical Errata" -- matches on the
+/// "errata" substring rather than the exact string for that reason). These
+/// are reference reprints carrying corrected rules text, not a separate
+/// physical card with its own copyright year printed on it -- so reading a
+/// real year off the photo is itself proof the scanned card isn't one of
+/// these (see [CardMatchCandidate.contradicted]).
+bool isErrataRarity(String? rarity) => rarity != null && rarity.toLowerCase().contains('errata');
 
 /// Every short line from [lines] concatenated with every other short line,
 /// in both orders. Some card types print their unique name split across
@@ -292,19 +307,22 @@ Future<CardMatchResult> matchCardFromOcr({
       if (restrictToSetId != null && printing.setId != restrictToSetId) continue;
       final set = await repo.setById(printing.setId);
       final knownBorder = set?.borderColor;
+      final borderContradicted = detectedBorderColor != null && knownBorder != null && knownBorder != detectedBorderColor;
+      final errataButYearRead = year != null && isErrataRarity(printing.rarity);
       results.add(CardMatchCandidate(
         card: printing,
         set: set,
         yearMatches: year != null && set?.year == year,
         borderMatches: detectedBorderColor != null && knownBorder != null && knownBorder == detectedBorderColor,
-        borderContradicted: detectedBorderColor != null && knownBorder != null && knownBorder != detectedBorderColor,
+        contradicted: borderContradicted || errataButYearRead,
       ));
     }
   }
-  // Printings a known border contradicts sort last (very likely wrong), then
-  // best-confirmed first, then in the wiki's chronological set order.
+  // Printings a known contradiction rules out sort last (very likely
+  // wrong), then best-confirmed first, then in the wiki's chronological
+  // set order.
   results.sort((a, b) {
-    if (a.borderContradicted != b.borderContradicted) return a.borderContradicted ? 1 : -1;
+    if (a.contradicted != b.contradicted) return a.contradicted ? 1 : -1;
     if (a.confidence != b.confidence) return b.confidence.compareTo(a.confidence);
     return (a.set?.order ?? 0).compareTo(b.set?.order ?? 0);
   });
@@ -313,10 +331,12 @@ Future<CardMatchResult> matchCardFromOcr({
   if (results.length == 1) {
     autoPick = results.first;
   } else {
-    // A known border contradiction rules a printing out entirely, not just
-    // "no bonus" -- e.g. if the photo reads white, a set on record as
-    // black-bordered can't be it, even if nothing else disagrees.
-    final viable = results.where((r) => !r.borderContradicted).toList();
+    // A known contradiction rules a printing out entirely, not just "no
+    // bonus" -- e.g. if the photo reads white, a set on record as
+    // black-bordered can't be it, and if the photo read a real year, an
+    // Errata reprint (no printed year at all) can't be it either, even if
+    // nothing else disagrees.
+    final viable = results.where((r) => !r.contradicted).toList();
     if (viable.length == 1) {
       autoPick = viable.first;
     } else if (viable.isNotEmpty) {
