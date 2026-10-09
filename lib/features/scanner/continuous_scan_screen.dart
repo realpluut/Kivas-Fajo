@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:camera/camera.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
@@ -16,13 +14,15 @@ import '../../data/models/card_set.dart';
 import '../../data/models/trek_card.dart';
 import '../../data/rotated_capture.dart';
 import '../../state/providers.dart';
+import 'scan_widgets.dart';
 import 'set_filter_sheet.dart';
 
-const _tickInterval = Duration(seconds: 3);
+enum _ScanState { idle, capturing, processing, results, added, noMatch, error }
 
-// Not using num.clamp() anywhere in this file -- it returns num, not double,
-// which the camera controller's setters require.
-double _clampD(double v, double lo, double hi) => v < lo ? lo : (v > hi ? hi : v);
+// Tunable -- "every 5 seconds for now". Covers both the wait before an
+// auto-fired shot from the live preview, and how long a result page stays
+// up before auto-scan reopens the camera and fires the next one.
+const _autoInterval = Duration(seconds: 5);
 
 Future<void> _deleteQuietly(String path) async {
   try {
@@ -31,6 +31,10 @@ Future<void> _deleteQuietly(String path) async {
     // Best-effort cleanup of a temp capture file; not worth surfacing.
   }
 }
+
+// Not using num.clamp() anywhere in this file -- it returns num, not double,
+// which the camera controller's setters require.
+double _clampD(double v, double lo, double hi) => v < lo ? lo : (v > hi ? hi : v);
 
 /// Picks the back camera to scan with, preferring the ultra-wide lens when
 /// the device has one. Card scanning is a macro-range task -- the card is
@@ -52,10 +56,11 @@ CameraDescription _pickBackCamera(List<CameraDescription> cameras) {
   );
 }
 
-/// Live "webcam-style" bulk scanner: keeps the camera open and, every few
-/// seconds, captures a frame, OCRs it, and -- if it's a confident, new match
-/// -- adds it to the collection automatically. Meant for running through a
-/// stack or binder page of cards without tapping anything between cards.
+/// Bulk scan -- the exact same single-shot capture/OCR/match pipeline as
+/// ScannerScreen (same per-card result page, same "almost always perfect
+/// hit" accuracy that comes from a fresh, fully-focused photo each time),
+/// with one addition: an auto-scan loop that re-fires that single-shot flow
+/// every [_autoInterval] instead of waiting for a shutter tap each time.
 class ContinuousScanScreen extends ConsumerStatefulWidget {
   const ContinuousScanScreen({super.key});
 
@@ -63,93 +68,135 @@ class ContinuousScanScreen extends ConsumerStatefulWidget {
   ConsumerState<ContinuousScanScreen> createState() => _ContinuousScanScreenState();
 }
 
-class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> with WidgetsBindingObserver {
-  CameraController? _controller;
-  Timer? _timer;
-  final _previewKey = GlobalKey();
+class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> {
+  _ScanState _state = _ScanState.idle;
+  String? _errorMessage;
+  CardMatchResult? _result;
+  String? _borderDebug;
 
-  // Visual confirmation that a focus tap was registered and whether the
-  // underlying camera call actually succeeded -- without this there's no way
-  // to tell "nothing happened because the tap didn't register" apart from
-  // "the tap worked but the device rejected the focus/exposure call".
-  Offset? _focusIndicatorPos;
-  bool _focusIndicatorOk = true;
-  Timer? _focusIndicatorTimer;
-  final _recognizer = TextRecognizer(script: TextRecognitionScript.latin);
-  final _audioPlayer = AudioPlayer();
+  TrekCard? _addedCard;
+  CardSet? _addedSet;
+  int _addedQuantity = 0;
+  int _addedThisSession = 0;
 
-  // Fire-and-forget audio feedback -- a short high beep for "added", a
-  // lower double-blip for "needs your attention" (multiple printings
-  // found), so you can keep feeding cards without watching the screen.
-  void _beep(String asset) {
-    _audioPlayer.play(AssetSource(asset));
-  }
-
-  bool _busy = false;
-  String? _initError;
-  String _status = 'Frame a card, then tap play to start scanning.';
-  String? _lastAddedCardId;
-  final List<TrekCard> _addedThisSession = [];
-
-  // Set while an ambiguous match is awaiting a manual pick -- capturing
-  // pauses (see _tick) so the picker doesn't get replaced mid-decision by
-  // the next tick's result, and resumes once the user picks or skips.
-  String? _ambiguousMatchedName;
-  List<CardMatchCandidate>? _ambiguousCandidates;
-  // The frame that produced the ambiguous match, frozen on screen in place of
-  // the live preview -- the live feed keeps moving in real time, so leaving
-  // it running while a decision from seconds ago is pending made the picker
-  // look like it was asking about whatever card happened to be in frame now.
-  String? _ambiguousImagePath;
-
-  // Off by default -- same reasoning as the single-shot scanner: flash glare
-  // off glossy card stock right where the title/copyright text sits tends to
-  // hurt OCR more than the extra light helps. Still toggleable for a
-  // genuinely dark room.
+  CameraController? _cameraController;
   bool _torchOn = false;
-
-  // veryHigh is the default -- enough resolution for the tiny sideways
-  // copyright/year text -- with max available for even more detail at the
-  // cost of slower capture/processing per tick.
-  ResolutionPreset _resolutionPreset = ResolutionPreset.veryHigh;
+  final _previewKey = GlobalKey();
 
   double _minZoom = 1.0;
   double _maxZoom = 1.0;
-  // 1.5x by default -- compensates for the ultra-wide lens's much wider
-  // field of view, same as the single-shot scanner.
   double _currentZoom = 1.5;
   double _zoomAtGestureStart = 1.5;
 
-  // Starts paused -- capturing (and burning through shutter cycles/battery)
-  // the instant this screen opens, before the card is even framed, was the
-  // complaint that led to this. The camera preview still shows immediately;
-  // only the automatic capture loop waits for an explicit start.
-  bool _running = false;
+  Offset? _focusIndicatorPos;
+  bool _focusIndicatorOk = true;
+  Timer? _focusIndicatorTimer;
 
-  double _minExposure = 0.0;
-  double _maxExposure = 0.0;
-  double _exposureOffset = 0.0;
+  // Off by default -- same as single-shot's "Scan Another": the first shot
+  // after opening this screen is always a deliberate tap, so the rig/card
+  // is framed before anything starts firing on its own.
+  bool _autoEnabled = false;
+  Timer? _autoTimer;
 
-  // null = "All Sets" -- matching runs against every card in the database,
-  // same as before this filter existed. Set to scope matching to just one
-  // edition, which also resolves reprint-year/border ambiguity for free
-  // since a name usually appears at most once within a single set.
+  // null = "All Sets" -- matching runs against every card in the database.
+  // Set to scope matching to just one edition, which also resolves
+  // reprint-year/border ambiguity for free since a name usually appears at
+  // most once within a single set.
   String? _setFilterId;
   String? _setFilterName;
+
+  final _recognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     WakelockPlus.enable(); // bulk scanning runs hands-off for minutes at a time; don't let the screen sleep mid-session
-    _init();
   }
 
-  Future<void> _init() async {
+  @override
+  void dispose() {
+    WakelockPlus.disable();
+    _cameraController?.dispose();
+    _recognizer.close();
+    _focusIndicatorTimer?.cancel();
+    _autoTimer?.cancel();
+    super.dispose();
+  }
+
+  void _cancelAutoTimer() {
+    _autoTimer?.cancel();
+    _autoTimer = null;
+  }
+
+  /// Schedules the next automatic shot [_autoInterval] from now. Called both
+  /// right after a result page appears (so it auto-advances) and when
+  /// auto-scan is switched on while already sitting on the camera preview.
+  void _scheduleNextAuto() {
+    _cancelAutoTimer();
+    if (!_autoEnabled) return;
+    _autoTimer = Timer(_autoInterval, () {
+      if (!mounted || !_autoEnabled) return;
+      switch (_state) {
+        case _ScanState.capturing:
+          _capture();
+        case _ScanState.added:
+        case _ScanState.noMatch:
+        case _ScanState.error:
+          _openCamera(autoCapture: true);
+        case _ScanState.idle:
+        case _ScanState.processing:
+        case _ScanState.results:
+          // Idle/processing shouldn't have a timer pending here; results
+          // (multiple candidates) needs a manual pick, so auto-scan is
+          // never scheduled while it's showing -- see _processPhoto.
+          break;
+      }
+    });
+  }
+
+  void _toggleAuto() {
+    setState(() => _autoEnabled = !_autoEnabled);
+    if (_autoEnabled) {
+      _scheduleNextAuto();
+    } else {
+      _cancelAutoTimer();
+    }
+  }
+
+  /// Marks [card] owned (quantity +1) and shows the confirmation view.
+  Future<void> _addCard(TrekCard card, CardSet? set) async {
+    final updated = await ref.read(collectionRepositoryProvider).incrementOwned(card.id);
+    ref.read(collectionRevisionProvider.notifier).state++;
+    if (!mounted) return;
+    setState(() {
+      _state = _ScanState.added;
+      _addedCard = card;
+      _addedSet = set;
+      _addedQuantity = updated.quantity;
+      _addedThisSession++;
+    });
+    _scheduleNextAuto();
+  }
+
+  /// Opens a live in-app camera preview instead of handing off to the
+  /// system camera app -- see scanner_screen.dart for the full reasoning.
+  ///
+  /// [autoCapture] skips the manual shutter tap: used for both "Scan
+  /// Another" and every auto-scan-driven reopen, where the framing is
+  /// already established and only the card itself needs swapping.
+  Future<void> _openCamera({bool autoCapture = false}) async {
+    setState(() {
+      _state = _ScanState.capturing;
+      _errorMessage = null;
+    });
     try {
       final cameras = await availableCameras();
       final back = _pickBackCamera(cameras);
-      final controller = CameraController(back, _resolutionPreset, enableAudio: false);
+      // max, not veryHigh -- see scanner_screen.dart: this is still one
+      // deliberate shot at a time, just fired automatically, so the same
+      // higher-detail capture that makes the single-shot scanner's hit
+      // rate so good applies here too.
+      final controller = CameraController(back, ResolutionPreset.max, enableAudio: false);
       await controller.initialize();
 
       if (_torchOn) {
@@ -158,6 +205,14 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
         } catch (_) {
           // Some devices/cameras don't support a torch; scanning still works without it.
         }
+      }
+      try {
+        // Bias focus toward the card's right edge, where the tiny sideways
+        // copyright/year text sits.
+        await controller.setFocusMode(FocusMode.auto);
+        await controller.setFocusPoint(const Offset(0.85, 0.5));
+      } catch (_) {
+        // Focus point control not supported on this device.
       }
 
       try {
@@ -169,110 +224,48 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
         // Zoom control not supported on this device; scanning still works at 1x.
       }
 
-      try {
-        _minExposure = await controller.getMinExposureOffset();
-        _maxExposure = await controller.getMaxExposureOffset();
-        if (_exposureOffset != 0) {
-          await controller.setExposureOffset(_clampD(_exposureOffset, _minExposure, _maxExposure));
-        }
-      } catch (_) {
-        // Exposure compensation not supported on this device.
-      }
-
-      try {
-        // Default center-weighted autofocus sharpens the card's main art/
-        // title, not the tiny sideways copyright/year text that sits near
-        // the card's right edge -- bias the focus point there instead.
-        // Coordinates are normalized (0,0 = top-left, 1,1 = bottom-right of
-        // the preview), not exact since how much of the frame the card
-        // fills varies, but this consistently favors the right-hand strip
-        // over dead-center.
-        await controller.setFocusMode(FocusMode.auto);
-        await controller.setFocusPoint(const Offset(0.85, 0.5));
-      } catch (_) {
-        // Focus point control not supported on this device.
-      }
-
       if (!mounted) return;
-      setState(() => _controller = controller);
-      // Only (re)start the capture loop if it was already running -- e.g.
-      // resuming from the background mid-session -- never on a fresh open.
-      if (_running) {
-        _timer?.cancel();
-        _timer = Timer.periodic(_tickInterval, (_) => _tick());
+      setState(() => _cameraController = controller);
+
+      if (autoCapture) {
+        // Give autofocus/exposure a moment to settle on the newly-placed
+        // card before snapping. If the user cancels or fires the shutter
+        // manually during this wait, _cameraController is already null by
+        // the time it elapses, so this backs off instead of double-capturing.
+        await Future.delayed(const Duration(milliseconds: 900));
+        if (!mounted || _cameraController == null) return;
+        await _capture();
+      } else if (_autoEnabled) {
+        _scheduleNextAuto();
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _initError = 'Could not start the camera: $e');
+      setState(() {
+        _state = _ScanState.error;
+        _errorMessage = 'Could not start the camera: $e';
+      });
     }
   }
 
-  /// Switching resolution means a new CameraController -- it's fixed at
-  /// construction time, not a live setting.
-  Future<void> _setResolution(ResolutionPreset preset) async {
-    if (preset == _resolutionPreset) return;
-    _timer?.cancel();
-    final old = _controller;
-    setState(() {
-      _controller = null;
-      _resolutionPreset = preset;
-    });
-    await old?.dispose();
-    await _init();
-  }
+  /// "Scan Another" -- see _openCamera's autoCapture doc.
+  Future<void> _scanAnother() => _openCamera(autoCapture: true);
 
   Future<void> _toggleTorch() async {
-    final controller = _controller;
+    final controller = _cameraController;
     if (controller == null) return;
-    final newState = !_torchOn;
+    final next = !_torchOn;
     try {
-      await controller.setFlashMode(newState ? FlashMode.torch : FlashMode.off);
-      setState(() => _torchOn = newState);
+      await controller.setFlashMode(next ? FlashMode.torch : FlashMode.off);
+      setState(() => _torchOn = next);
     } catch (_) {
       // Device/camera doesn't support a torch -- leave state as it was.
     }
   }
 
-  void _toggleRunning() {
-    if (_running) {
-      _timer?.cancel();
-      setState(() {
-        _running = false;
-        _status = 'Paused. Tap play to resume scanning.';
-      });
-    } else {
-      setState(() {
-        _running = true;
-        _status = 'Point the camera at a card.';
-      });
-      _timer?.cancel();
-      _timer = Timer.periodic(_tickInterval, (_) => _tick());
-    }
-  }
-
-  void _onScaleStart(ScaleStartDetails details) {
-    _zoomAtGestureStart = _currentZoom;
-  }
-
-  Future<void> _onScaleUpdate(ScaleUpdateDetails details) async {
-    final controller = _controller;
-    if (controller == null || _minZoom >= _maxZoom) return;
-    final newZoom = _clampD(_zoomAtGestureStart * details.scale, _minZoom, _maxZoom);
-    if ((newZoom - _currentZoom).abs() < 0.01) return;
-    setState(() => _currentZoom = newZoom);
-    try {
-      await controller.setZoomLevel(newZoom);
-    } catch (_) {
-      // Ignore transient zoom errors -- the next pinch update will retry.
-    }
-  }
-
-  // Lets you tap the card in the live preview to force a refocus there, the
-  // same as the system Camera app -- the fixed focus point set at startup is
-  // a reasonable default but doesn't always lock onto the card on every
-  // device/lens.
+  // Lets you tap the card in the preview to force a refocus there, the same
+  // as the system Camera app.
   Future<void> _onTapToFocus(TapUpDetails details) async {
-    final controller = _controller;
+    final controller = _cameraController;
     final box = _previewKey.currentContext?.findRenderObject() as RenderBox?;
     if (controller == null || box == null) return;
     final local = box.globalToLocal(details.globalPosition);
@@ -300,43 +293,58 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
     });
   }
 
-  Future<void> _onExposureChanged(double value) async {
-    setState(() => _exposureOffset = value);
+  void _onScaleStart(ScaleStartDetails details) {
+    _zoomAtGestureStart = _currentZoom;
+  }
+
+  Future<void> _onScaleUpdate(ScaleUpdateDetails details) async {
+    final controller = _cameraController;
+    if (controller == null || _minZoom >= _maxZoom) return;
+    final newZoom = _clampD(_zoomAtGestureStart * details.scale, _minZoom, _maxZoom);
+    if ((newZoom - _currentZoom).abs() < 0.01) return;
+    setState(() => _currentZoom = newZoom);
     try {
-      await _controller?.setExposureOffset(value);
+      await controller.setZoomLevel(newZoom);
     } catch (_) {
-      // Ignore -- slider still reflects the requested value.
+      // Ignore transient zoom errors -- the next pinch update will retry.
     }
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    final controller = _controller;
+  void _cancelCapture() {
+    _cancelAutoTimer();
+    final controller = _cameraController;
+    _cameraController = null;
+    controller?.dispose();
+    setState(() => _state = _ScanState.idle);
+  }
+
+  Future<void> _capture() async {
+    _cancelAutoTimer();
+    final controller = _cameraController;
     if (controller == null || !controller.value.isInitialized) return;
-    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      _timer?.cancel();
-      controller.dispose();
-      _controller = null;
-    } else if (state == AppLifecycleState.resumed) {
-      _init();
-    }
-  }
-
-  Future<void> _tick() async {
-    final controller = _controller;
-    if (_busy || controller == null || !controller.value.isInitialized) return;
-    _busy = true;
-    XFile? file;
-    String? grayPath;
-    var keepFile = false;
+    setState(() => _state = _ScanState.processing);
+    // Free the camera hardware while OCR/matching runs -- this is a single
+    // shot, not a live feed, so there's nothing left to preview.
+    _cameraController = null;
+    XFile file;
     try {
       file = await controller.takePicture();
+    } finally {
+      await controller.dispose();
+    }
+    await _processPhoto(file.path);
+  }
+
+  Future<void> _processPhoto(String path) async {
+    String? grayPath;
+    try {
       // Grayscale copy for OCR only -- border detection below still reads
       // the original color photo (see image_prep.dart).
-      grayPath = await grayscaleCopy(file.path);
+      grayPath = await grayscaleCopy(path);
       final recognized = await _recognizer.processImage(InputImage.fromFilePath(grayPath));
-      final rotatedRecognized = await recognizeRotatedForYear(file.path, _recognizer);
-      final borderSample = await sampleBorder(file.path);
+      final rotatedRecognized = await recognizeRotatedForYear(path, _recognizer);
+      final borderSample = await sampleBorder(path);
+      _borderDebug = borderSample.debug;
       final setFilterId = _setFilterId;
       final names = setFilterId == null
           ? await ref.read(distinctCardNamesProvider.future)
@@ -352,105 +360,50 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
       );
 
       if (!mounted) return;
-
       if (!result.hasText) {
-        _lastAddedCardId = null;
-        setState(() => _status = 'No text seen -- hold steadier or move closer.');
-      } else if (result.autoPick == null) {
-        _lastAddedCardId = null;
-        if (result.candidates.isEmpty) {
-          final signals = 'year: ${result.detectedYear ?? "none"}, border: ${result.detectedBorderColor ?? "none"} '
-              '(corners: ${result.cornerLuminance.map((l) => l.round()).join(", ")})';
-          final scopeNote = _setFilterName != null
-              ? ' Scoped to "$_setFilterName" -- switch to All Sets if this card is from elsewhere.'
-              : '';
-          setState(() => _status = 'No match for what was read. [$signals]$scopeNote');
-        } else {
-          // Pause capturing and let the user pick right here instead of
-          // forcing a switch to the single-shot scanner. Freeze on this
-          // frame (see _ambiguousImagePath) rather than leaving the live
-          // preview running while the decision is pending.
-          _timer?.cancel();
-          keepFile = true;
-          _beep('sounds/beep_multi.wav');
-          setState(() {
-            _ambiguousMatchedName = result.matchedName;
-            _ambiguousCandidates = result.candidates;
-            _ambiguousImagePath = file!.path;
-            _status = 'Ambiguous match (${result.matchedName}) -- pick the right printing below.';
-          });
-        }
-      } else {
-        final pick = result.autoPick!;
-        // Shown on every confident add, not just "no match" -- lets you
-        // spot-check border/year detection while bulk-scanning a whole
-        // stack, instead of only finding out something's off once a scan
-        // actually fails.
-        final signals = 'year: ${result.detectedYear ?? "none"}, border: ${result.detectedBorderColor ?? "none"}';
-        if (pick.card.id == _lastAddedCardId) {
-          setState(() => _status = 'Still showing "${pick.card.name}" -- already added. [$signals]');
-        } else {
-          final updated = await ref.read(collectionRepositoryProvider).incrementOwned(pick.card.id);
-          ref.read(collectionRevisionProvider.notifier).state++;
-          _lastAddedCardId = pick.card.id;
-          if (!mounted) return;
-          _beep('sounds/beep_success.wav');
-          setState(() {
-            _addedThisSession.insert(0, pick.card);
-            _status = 'Added "${pick.card.name}" -- now own ${updated.quantity}. [$signals]';
-          });
-        }
+        setState(() {
+          _state = _ScanState.error;
+          _errorMessage = 'Could not read any text on that photo. Try a closer, well-lit shot of the card.';
+          _result = result;
+        });
+        _scheduleNextAuto();
+        return;
       }
+      if (result.candidates.isEmpty) {
+        setState(() {
+          _state = _ScanState.noMatch;
+          _result = result;
+        });
+        _scheduleNextAuto();
+        return;
+      }
+      if (result.autoPick != null) {
+        _result = result;
+        await _addCard(result.autoPick!.card, result.autoPick!.set);
+        return;
+      }
+      // Multiple candidates -- needs a manual pick, so auto-scan (if on)
+      // just waits here rather than scheduling anything.
+      setState(() {
+        _state = _ScanState.results;
+        _result = result;
+      });
     } catch (e) {
-      if (mounted) setState(() => _status = 'Scan error: $e');
+      if (!mounted) return;
+      setState(() {
+        _state = _ScanState.error;
+        _errorMessage = 'Something went wrong reading that photo: $e';
+      });
+      _scheduleNextAuto();
     } finally {
-      final path = file?.path;
-      if (path != null && !keepFile) {
-        await _deleteQuietly(path);
-      }
+      await _deleteQuietly(path);
       if (grayPath != null && grayPath != path) await _deleteQuietly(grayPath);
-      _busy = false;
     }
   }
 
-  void _resumeCapturing() {
-    final oldImagePath = _ambiguousImagePath;
-    setState(() {
-      _ambiguousMatchedName = null;
-      _ambiguousCandidates = null;
-      _ambiguousImagePath = null;
-    });
-    if (oldImagePath != null) {
-      _deleteQuietly(oldImagePath);
-    }
-    // cancel() stops a timer but leaves the (now-dead) reference assigned --
-    // ??= would see it as non-null and skip creating a replacement, which
-    // silently killed the auto-scan loop the first time this ran.
-    _timer?.cancel();
-    // Only restart the loop if it was actually running -- an ambiguous
-    // match can only fire while running, but this guard keeps that
-    // invariant explicit instead of assumed.
-    if (_running) {
-      _timer = Timer.periodic(_tickInterval, (_) => _tick());
-    }
-  }
-
-  Future<void> _pickAmbiguous(TrekCard card, CardSet? set) async {
-    final updated = await ref.read(collectionRepositoryProvider).incrementOwned(card.id);
-    ref.read(collectionRevisionProvider.notifier).state++;
-    _lastAddedCardId = card.id; // don't immediately re-prompt if this same card is still in frame
-    if (!mounted) return;
-    _beep('sounds/beep_success.wav');
-    setState(() {
-      _addedThisSession.insert(0, card);
-      _status = 'Added "${card.name}" -- now own ${updated.quantity}.';
-    });
-    _resumeCapturing();
-  }
-
-  void _dismissAmbiguous() {
-    setState(() => _status = 'Skipped. Point the camera at a card.');
-    _resumeCapturing();
+  void _backToIdle() {
+    _cancelAutoTimer();
+    setState(() => _state = _ScanState.idle);
   }
 
   Future<void> _pickSetFilter() async {
@@ -463,320 +416,141 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> wit
     setState(() {
       _setFilterId = result.id;
       _setFilterName = result.name;
-      _status = result.id == null
-          ? 'Scanning against all sets. Point the camera at a card.'
-          : 'Scoped to "${result.name}". Point the camera at a card.';
     });
   }
 
   @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    WakelockPlus.disable();
-    _timer?.cancel();
-    _focusIndicatorTimer?.cancel();
-    _controller?.dispose();
-    _recognizer.close();
-    _audioPlayer.dispose();
-    final pendingImagePath = _ambiguousImagePath;
-    if (pendingImagePath != null) _deleteQuietly(pendingImagePath);
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_initError != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Bulk Scan')),
-        body: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Center(child: Text(_initError!, textAlign: TextAlign.center)),
-        ),
-      );
-    }
-    final controller = _controller;
-    if (controller == null || !controller.value.isInitialized) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final maxLabel = _resolutionPreset == ResolutionPreset.max ? 'MAX' : 'VHQ';
-
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (_ambiguousImagePath != null)
-            // Frozen on the frame that produced this ambiguous match --
-            // the live preview would keep moving to whatever card is
-            // physically in front of the camera right now, which isn't
-            // necessarily the card this decision is about.
-            Image.file(File(_ambiguousImagePath!), fit: BoxFit.cover)
-          else
-            GestureDetector(
-              key: _previewKey,
-              onScaleStart: _onScaleStart,
-              onScaleUpdate: _onScaleUpdate,
-              onTapUp: _onTapToFocus,
-              child: CameraPreview(controller),
-            ),
-          if (_ambiguousImagePath == null && _focusIndicatorPos != null)
-            _FocusReticle(center: _focusIndicatorPos!, ok: _focusIndicatorOk),
-          // Big, obvious start control instead of capturing the instant the
-          // screen opens -- frame the card first, then tap to begin.
-          if (!_running && _ambiguousImagePath == null)
-            Center(
-              child: GestureDetector(
-                onTap: _toggleRunning,
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 56),
-                ),
-              ),
-            ),
-          SafeArea(
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  color: Colors.black54,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      IconButton(
-                        icon: Icon(_running ? Icons.pause_circle_filled : Icons.play_circle_fill, color: Colors.white),
-                        tooltip: _running ? 'Pause scanning' : 'Start scanning',
-                        onPressed: _toggleRunning,
-                      ),
-                      const Spacer(),
-                      Text('${_addedThisSession.length} added', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 12),
-                      Text('${_currentZoom.toStringAsFixed(1)}x', style: const TextStyle(color: Colors.white)),
-                      IconButton(
-                        icon: Icon(_torchOn ? Icons.flash_on : Icons.flash_off, color: Colors.white),
-                        tooltip: _torchOn ? 'Turn off flashlight' : 'Turn on flashlight',
-                        onPressed: _toggleTorch,
-                      ),
-                      IconButton(
-                        icon: Text(maxLabel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                        tooltip: _resolutionPreset == ResolutionPreset.max
-                            ? 'Max resolution (tap for Very High -- faster)'
-                            : 'Very High resolution (tap for Max -- slower, more detail)',
-                        onPressed: () => _setResolution(
-                          _resolutionPreset == ResolutionPreset.max ? ResolutionPreset.veryHigh : ResolutionPreset.max,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                InkWell(
-                  onTap: _pickSetFilter,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    color: Colors.black45,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.filter_alt_outlined, color: Colors.white70, size: 16),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _setFilterName ?? 'All Sets',
-                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 18),
-                      ],
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                if (_ambiguousCandidates != null)
-                  _AmbiguousPicker(
-                    matchedName: _ambiguousMatchedName ?? '',
-                    candidates: _ambiguousCandidates!,
-                    onPick: _pickAmbiguous,
-                    onSkip: _dismissAmbiguous,
-                  )
-                else
-                  Container(
-                    width: double.infinity,
-                    color: Colors.black54,
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_status, style: const TextStyle(color: Colors.white)),
-                        if (_maxExposure > _minExposure) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.brightness_low, color: Colors.white70, size: 18),
-                              Expanded(
-                                child: Slider(
-                                  value: _clampD(_exposureOffset, _minExposure, _maxExposure),
-                                  min: _minExposure,
-                                  max: _maxExposure,
-                                  onChanged: _onExposureChanged,
-                                ),
-                              ),
-                              const Icon(Icons.brightness_high, color: Colors.white70, size: 18),
-                            ],
-                          ),
-                        ],
-                        if (_addedThisSession.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          SizedBox(
-                            height: 56,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _addedThisSession.length,
-                              separatorBuilder: (_, _) => const SizedBox(width: 6),
-                              itemBuilder: (context, i) {
-                                final card = _addedThisSession[i];
-                                return ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: card.imageUrl != null
-                                      ? CachedNetworkImage(imageUrl: card.imageUrl!, width: 40, fit: BoxFit.cover)
-                                      : Container(width: 40, color: Colors.white24),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+      appBar: AppBar(
+        title: const Text('Bulk Scan'),
+        actions: [
+          if (_addedThisSession > 0)
+            Center(child: Padding(padding: const EdgeInsets.only(right: 8), child: Text('$_addedThisSession added'))),
+          IconButton(
+            icon: const Icon(Icons.filter_alt_outlined),
+            tooltip: _setFilterName ?? 'All Sets',
+            onPressed: _pickSetFilter,
           ),
         ],
+        bottom: _setFilterName != null
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(20),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text('Scoped to "$_setFilterName"', style: Theme.of(context).textTheme.bodySmall),
+                ),
+              )
+            : null,
       ),
-    );
-  }
-}
-
-/// Brief square that flashes where a focus tap landed -- green if the camera
-/// accepted the focus/exposure point, amber if the device rejected it (so a
-/// tap that visibly "does nothing" can be told apart from a tap that wasn't
-/// registered at all).
-class _FocusReticle extends StatelessWidget {
-  final Offset center;
-  final bool ok;
-  const _FocusReticle({required this.center, required this.ok});
-
-  @override
-  Widget build(BuildContext context) {
-    const size = 64.0;
-    return Positioned(
-      left: center.dx - size / 2,
-      top: center.dy - size / 2,
-      child: IgnorePointer(
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            border: Border.all(color: ok ? Colors.greenAccent : Colors.amber, width: 2),
-            borderRadius: BorderRadius.circular(4),
-          ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: switch (_state) {
+            _ScanState.idle => _BulkIdleView(onScan: _openCamera),
+            _ScanState.capturing => CapturingView(
+                controller: _cameraController,
+                torchOn: _torchOn,
+                previewKey: _previewKey,
+                onCapture: _capture,
+                onToggleTorch: _toggleTorch,
+                onCancel: _cancelCapture,
+                onTapToFocus: _onTapToFocus,
+                focusIndicatorPos: _focusIndicatorPos,
+                focusIndicatorOk: _focusIndicatorOk,
+                onScaleStart: _onScaleStart,
+                onScaleUpdate: _onScaleUpdate,
+                currentZoom: _currentZoom,
+                autoEnabled: _autoEnabled,
+                onToggleAuto: _toggleAuto,
+              ),
+            _ScanState.processing => const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Reading card...'),
+                  ],
+                ),
+              ),
+            _ScanState.error => MessageView(
+                icon: Icons.error_outline,
+                message: _errorMessage ?? 'Something went wrong.',
+                onRetry: _openCamera,
+                onDone: _backToIdle,
+                result: _result,
+                borderDebug: _borderDebug,
+                autoEnabled: _autoEnabled,
+                onToggleAuto: _toggleAuto,
+              ),
+            _ScanState.noMatch => MessageView(
+                icon: Icons.search_off,
+                message: 'No card name matched what was read from the photo.'
+                    '${_result?.detectedYear != null ? ' (detected year: ${_result!.detectedYear})' : ''}'
+                    '${_result?.detectedBorderColor != null ? ' (detected border: ${_result!.detectedBorderColor})' : ''}'
+                    ' Try a closer, well-lit photo of the title.',
+                onRetry: _openCamera,
+                onDone: _backToIdle,
+                result: _result,
+                borderDebug: _borderDebug,
+                autoEnabled: _autoEnabled,
+                onToggleAuto: _toggleAuto,
+              ),
+            _ScanState.added => AddedView(
+                card: _addedCard!,
+                set: _addedSet,
+                quantity: _addedQuantity,
+                onScanAgain: _scanAnother,
+                onDone: _backToIdle,
+                result: _result,
+                borderDebug: _borderDebug,
+                autoEnabled: _autoEnabled,
+                onToggleAuto: _toggleAuto,
+              ),
+            _ScanState.results => ResultsView(
+                matchedName: _result?.matchedName ?? '',
+                detectedYear: _result?.detectedYear,
+                detectedBorderColor: _result?.detectedBorderColor,
+                candidates: _result?.candidates ?? const [],
+                onScanAgain: _scanAnother,
+                onPick: _addCard,
+                onDone: _backToIdle,
+                result: _result,
+                borderDebug: _borderDebug,
+              ),
+          },
         ),
       ),
     );
   }
 }
 
-/// Lets you pick the right printing directly over the live camera feed when
-/// bulk scanning can't auto-resolve one -- no need to leave bulk scan mode
-/// for the single-shot picker.
-class _AmbiguousPicker extends StatelessWidget {
-  final String matchedName;
-  final List<CardMatchCandidate> candidates;
-  final void Function(TrekCard card, CardSet? set) onPick;
-  final VoidCallback onSkip;
-  const _AmbiguousPicker({
-    required this.matchedName,
-    required this.candidates,
-    required this.onPick,
-    required this.onSkip,
-  });
+class _BulkIdleView extends StatelessWidget {
+  final VoidCallback onScan;
+  const _BulkIdleView({required this.onScan});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5),
-      color: Colors.black87,
-      padding: const EdgeInsets.all(12),
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Which printing is "$matchedName"?',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-              TextButton(
-                onPressed: onSkip,
-                child: const Text('Skip'),
-              ),
-            ],
+          Icon(Icons.view_carousel_outlined, size: 64, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 16),
+          const Text('Scan through a stack of cards one at a time.', textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          Text(
+            'Same scan as the single photo screen -- frame the first card and '
+            'take the photo, then turn on auto-scan (the play button next to '
+            'the shutter) to keep going automatically every '
+            '${_autoInterval.inSeconds}s. Pause it any time from there or from '
+            'the result screen.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.grey),
           ),
-          Flexible(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: candidates.length,
-              itemBuilder: (context, i) {
-                final c = candidates[i];
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 3),
-                  child: ListTile(
-                    dense: true,
-                    leading: SizedBox(
-                      width: 32,
-                      height: 44,
-                      child: c.card.imageUrl != null
-                          ? CachedNetworkImage(imageUrl: c.card.imageUrl!, fit: BoxFit.cover)
-                          : const Icon(Icons.image_not_supported),
-                    ),
-                    title: Text(c.card.name, style: const TextStyle(fontSize: 13)),
-                    subtitle: Text(
-                      '${c.set?.name ?? c.card.setId}'
-                      '${c.set?.year != null ? " (${c.set!.year})" : ""}'
-                      '${c.set?.borderColor != null ? " · ${c.set!.borderColor} border" : ""}',
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (c.contradicted)
-                          const Icon(Icons.cancel, color: Colors.red, size: 18)
-                        else if (c.confidence > 0)
-                          Icon(Icons.check_circle, color: c.confidence == 2 ? Colors.green : Colors.amber, size: 18),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle),
-                          tooltip: 'Add to collection',
-                          onPressed: () => onPick(c.card, c.set),
-                        ),
-                      ],
-                    ),
-                    // No onTap here -- a ListTile.onTap plus a nested
-                    // trailing IconButton.onPressed can both fire from one
-                    // tap near the button, so the IconButton is the row's
-                    // only tap target for adding a card.
-                  ),
-                );
-              },
-            ),
-          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(onPressed: onScan, icon: const Icon(Icons.camera_alt), label: const Text('Take Photo')),
         ],
       ),
     );
