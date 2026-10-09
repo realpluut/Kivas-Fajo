@@ -67,6 +67,36 @@ final appThemeStyleProvider = StateNotifierProvider<AppThemeStyleController, App
   return AppThemeStyleController(ref.watch(sharedPreferencesProvider));
 });
 
+const _autoScanIntervalKey = 'auto_scan_interval_seconds';
+const int kDefaultAutoScanIntervalSeconds = 5;
+const int kMinAutoScanIntervalSeconds = 2;
+const int kMaxAutoScanIntervalSeconds = 15;
+
+/// How often bulk scan's Auto mode re-fires the shutter, in seconds --
+/// editable in Settings since how much time is actually needed to swap a
+/// card in front of the camera varies a lot by setup (handheld vs. a fixed
+/// rig, how fast someone can flip through a binder page).
+class AutoScanIntervalController extends StateNotifier<int> {
+  AutoScanIntervalController(this._prefs) : super(_load(_prefs));
+  final SharedPreferences _prefs;
+
+  static int _load(SharedPreferences prefs) {
+    final saved = prefs.getInt(_autoScanIntervalKey);
+    if (saved == null) return kDefaultAutoScanIntervalSeconds;
+    return saved.clamp(kMinAutoScanIntervalSeconds, kMaxAutoScanIntervalSeconds);
+  }
+
+  Future<void> setSeconds(int seconds) async {
+    final clamped = seconds.clamp(kMinAutoScanIntervalSeconds, kMaxAutoScanIntervalSeconds);
+    state = clamped;
+    await _prefs.setInt(_autoScanIntervalKey, clamped);
+  }
+}
+
+final autoScanIntervalProvider = StateNotifierProvider<AutoScanIntervalController, int>((ref) {
+  return AutoScanIntervalController(ref.watch(sharedPreferencesProvider));
+});
+
 final allSetsProvider = FutureProvider<List<CardSet>>((ref) {
   return ref.watch(cardRepositoryProvider).allSets();
 });

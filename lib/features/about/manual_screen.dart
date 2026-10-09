@@ -155,7 +155,8 @@ class ManualScreen extends StatelessWidget {
                 heading: 'Auto-scan',
                 text: 'Tap the play icon next to the shutter to turn on Auto -- it re-fires the shot every '
                     'few seconds on its own instead of waiting for a tap, so you can just keep swapping cards '
-                    'in front of the camera. The same control (now a pause icon) also sits on whichever '
+                    'in front of the camera. That interval is adjustable in Settings > Scanning if it\'s too '
+                    'fast or slow for how you\'re feeding cards through. The same control (now a pause icon) also sits on whichever '
                     'result screen Auto lands you on, so you can stop the loop right there without going back '
                     'to the camera first. Auto pauses itself automatically whenever a match is ambiguous and '
                     'needs a manual pick, then picks back up once you choose a printing.',

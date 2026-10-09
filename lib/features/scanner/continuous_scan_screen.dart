@@ -19,11 +19,6 @@ import 'set_filter_sheet.dart';
 
 enum _ScanState { idle, capturing, processing, results, added, noMatch, error }
 
-// Tunable -- "every 5 seconds for now". Covers both the wait before an
-// auto-fired shot from the live preview, and how long a result page stays
-// up before auto-scan reopens the camera and fires the next one.
-const _autoInterval = Duration(seconds: 5);
-
 Future<void> _deleteQuietly(String path) async {
   try {
     await File(path).delete();
@@ -60,7 +55,8 @@ CameraDescription _pickBackCamera(List<CameraDescription> cameras) {
 /// ScannerScreen (same per-card result page, same "almost always perfect
 /// hit" accuracy that comes from a fresh, fully-focused photo each time),
 /// with one addition: an auto-scan loop that re-fires that single-shot flow
-/// every [_autoInterval] instead of waiting for a shutter tap each time.
+/// every few seconds (configurable in Settings, see autoScanIntervalProvider)
+/// instead of waiting for a shutter tap each time.
 class ContinuousScanScreen extends ConsumerStatefulWidget {
   const ContinuousScanScreen({super.key});
 
@@ -128,13 +124,17 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> {
     _autoTimer = null;
   }
 
-  /// Schedules the next automatic shot [_autoInterval] from now. Called both
-  /// right after a result page appears (so it auto-advances) and when
-  /// auto-scan is switched on while already sitting on the camera preview.
+  /// Schedules the next automatic shot, [autoScanIntervalProvider] seconds
+  /// from now. Called both right after a result page appears (so it
+  /// auto-advances) and when auto-scan is switched on while already sitting
+  /// on the camera preview. Reads the current setting at call time rather
+  /// than watching it, so a change in Settings takes effect on the next
+  /// scheduled shot, not retroactively mid-countdown.
   void _scheduleNextAuto() {
     _cancelAutoTimer();
     if (!_autoEnabled) return;
-    _autoTimer = Timer(_autoInterval, () {
+    final interval = Duration(seconds: ref.read(autoScanIntervalProvider));
+    _autoTimer = Timer(interval, () {
       if (!mounted || !_autoEnabled) return;
       switch (_state) {
         case _ScanState.capturing:
@@ -421,6 +421,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final autoScanInterval = ref.watch(autoScanIntervalProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bulk Scan'),
@@ -447,7 +448,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: switch (_state) {
-            _ScanState.idle => _BulkIdleView(onScan: _openCamera),
+            _ScanState.idle => _BulkIdleView(onScan: _openCamera, intervalSeconds: autoScanInterval),
             _ScanState.capturing => CapturingView(
                 controller: _cameraController,
                 torchOn: _torchOn,
@@ -463,6 +464,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> {
                 currentZoom: _currentZoom,
                 autoEnabled: _autoEnabled,
                 onToggleAuto: _toggleAuto,
+                autoIntervalSeconds: autoScanInterval,
               ),
             _ScanState.processing => const Center(
                 child: Column(
@@ -483,6 +485,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> {
                 borderDebug: _borderDebug,
                 autoEnabled: _autoEnabled,
                 onToggleAuto: _toggleAuto,
+                autoIntervalSeconds: autoScanInterval,
               ),
             _ScanState.noMatch => MessageView(
                 icon: Icons.search_off,
@@ -496,6 +499,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> {
                 borderDebug: _borderDebug,
                 autoEnabled: _autoEnabled,
                 onToggleAuto: _toggleAuto,
+                autoIntervalSeconds: autoScanInterval,
               ),
             _ScanState.added => AddedView(
                 card: _addedCard!,
@@ -507,6 +511,7 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> {
                 borderDebug: _borderDebug,
                 autoEnabled: _autoEnabled,
                 onToggleAuto: _toggleAuto,
+                autoIntervalSeconds: autoScanInterval,
               ),
             _ScanState.results => ResultsView(
                 matchedName: _result?.matchedName ?? '',
@@ -528,7 +533,8 @@ class _ContinuousScanScreenState extends ConsumerState<ContinuousScanScreen> {
 
 class _BulkIdleView extends StatelessWidget {
   final VoidCallback onScan;
-  const _BulkIdleView({required this.onScan});
+  final int intervalSeconds;
+  const _BulkIdleView({required this.onScan, required this.intervalSeconds});
 
   @override
   Widget build(BuildContext context) {
@@ -543,8 +549,8 @@ class _BulkIdleView extends StatelessWidget {
           Text(
             'Same scan as the single photo screen -- frame the first card and '
             'take the photo, then turn on auto-scan (the play button next to '
-            'the shutter) to keep going automatically every '
-            '${_autoInterval.inSeconds}s. Pause it any time from there or from '
+            'the shutter) to keep going automatically every ${intervalSeconds}s '
+            '(change that in Settings). Pause it any time from there or from '
             'the result screen.',
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.grey),

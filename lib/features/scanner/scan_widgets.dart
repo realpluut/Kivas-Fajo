@@ -46,13 +46,23 @@ class AutoToggleButton extends StatelessWidget {
   final bool autoEnabled;
   final VoidCallback onToggle;
   final Color? color;
-  const AutoToggleButton({super.key, required this.autoEnabled, required this.onToggle, this.color});
+  // Shown in the tooltip when turning auto-scan on, e.g. "every 5s" --
+  // omitted (generic "every few seconds") if the caller doesn't have it.
+  final int? intervalSeconds;
+  const AutoToggleButton({
+    super.key,
+    required this.autoEnabled,
+    required this.onToggle,
+    this.color,
+    this.intervalSeconds,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final interval = intervalSeconds == null ? 'few seconds' : '${intervalSeconds}s';
     return IconButton(
       icon: Icon(autoEnabled ? Icons.pause_circle_filled : Icons.play_circle_fill, color: color),
-      tooltip: autoEnabled ? 'Pause auto-scan' : 'Start auto-scan (every few seconds)',
+      tooltip: autoEnabled ? 'Pause auto-scan' : 'Start auto-scan (every $interval)',
       onPressed: onToggle,
     );
   }
@@ -64,18 +74,25 @@ class AutoToggleButton extends StatelessWidget {
 class AutoStatusRow extends StatelessWidget {
   final bool autoEnabled;
   final VoidCallback onToggle;
-  const AutoStatusRow({super.key, required this.autoEnabled, required this.onToggle});
+  final int? intervalSeconds;
+  const AutoStatusRow({super.key, required this.autoEnabled, required this.onToggle, this.intervalSeconds});
 
   @override
   Widget build(BuildContext context) {
+    final interval = intervalSeconds == null ? '' : ' (${intervalSeconds}s)';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AutoToggleButton(autoEnabled: autoEnabled, onToggle: onToggle, color: Theme.of(context).colorScheme.primary),
+          AutoToggleButton(
+            autoEnabled: autoEnabled,
+            onToggle: onToggle,
+            color: Theme.of(context).colorScheme.primary,
+            intervalSeconds: intervalSeconds,
+          ),
           Text(
-            autoEnabled ? 'Auto-scanning -- next shot coming up' : 'Auto-scan paused',
+            autoEnabled ? 'Auto-scanning$interval -- next shot coming up' : 'Auto-scan paused',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
@@ -100,6 +117,7 @@ class CapturingView extends StatelessWidget {
   // Null hides the auto-scan control entirely -- only bulk scan passes this.
   final bool? autoEnabled;
   final VoidCallback? onToggleAuto;
+  final int? autoIntervalSeconds;
   const CapturingView({
     super.key,
     required this.controller,
@@ -116,6 +134,7 @@ class CapturingView extends StatelessWidget {
     required this.currentZoom,
     this.autoEnabled,
     this.onToggleAuto,
+    this.autoIntervalSeconds,
   });
 
   @override
@@ -169,7 +188,7 @@ class CapturingView extends StatelessWidget {
               onPressed: onToggleTorch,
             ),
             if (autoEnabled != null && onToggleAuto != null)
-              AutoToggleButton(autoEnabled: autoEnabled!, onToggle: onToggleAuto!),
+              AutoToggleButton(autoEnabled: autoEnabled!, onToggle: onToggleAuto!, intervalSeconds: autoIntervalSeconds),
             const SizedBox(width: 24),
             IconButton(
               icon: const Icon(Icons.camera_alt, size: 36),
@@ -240,6 +259,7 @@ class MessageView extends StatelessWidget {
   final String? borderDebug;
   final bool? autoEnabled;
   final VoidCallback? onToggleAuto;
+  final int? autoIntervalSeconds;
   const MessageView({
     super.key,
     required this.icon,
@@ -250,6 +270,7 @@ class MessageView extends StatelessWidget {
     this.borderDebug,
     this.autoEnabled,
     this.onToggleAuto,
+    this.autoIntervalSeconds,
   });
 
   @override
@@ -264,7 +285,7 @@ class MessageView extends StatelessWidget {
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             if (autoEnabled != null && onToggleAuto != null)
-              AutoStatusRow(autoEnabled: autoEnabled!, onToggle: onToggleAuto!),
+              AutoStatusRow(autoEnabled: autoEnabled!, onToggle: onToggleAuto!, intervalSeconds: autoIntervalSeconds),
             const SizedBox(height: 8),
             FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.camera_alt), label: const Text('Try Again')),
             const SizedBox(height: 8),
@@ -287,6 +308,7 @@ class AddedView extends StatelessWidget {
   final String? borderDebug;
   final bool? autoEnabled;
   final VoidCallback? onToggleAuto;
+  final int? autoIntervalSeconds;
   const AddedView({
     super.key,
     required this.card,
@@ -298,6 +320,7 @@ class AddedView extends StatelessWidget {
     this.borderDebug,
     this.autoEnabled,
     this.onToggleAuto,
+    this.autoIntervalSeconds,
   });
 
   @override
@@ -321,7 +344,7 @@ class AddedView extends StatelessWidget {
             Text('You now own $quantity', style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 16),
             if (autoEnabled != null && onToggleAuto != null)
-              AutoStatusRow(autoEnabled: autoEnabled!, onToggle: onToggleAuto!),
+              AutoStatusRow(autoEnabled: autoEnabled!, onToggle: onToggleAuto!, intervalSeconds: autoIntervalSeconds),
             const SizedBox(height: 8),
             FilledButton.icon(onPressed: onScanAgain, icon: const Icon(Icons.camera_alt), label: const Text('Scan Another')),
             const SizedBox(height: 8),

@@ -75,6 +75,8 @@ class SettingsScreen extends ConsumerWidget {
     final modeController = ref.read(themeModeProvider.notifier);
     final themeStyle = ref.watch(appThemeStyleProvider);
     final styleController = ref.read(appThemeStyleProvider.notifier);
+    final autoScanInterval = ref.watch(autoScanIntervalProvider);
+    final autoScanIntervalController = ref.read(autoScanIntervalProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -117,6 +119,38 @@ class SettingsScreen extends ConsumerWidget {
                         value: s,
                       ))
                   .toList(),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text('Scanning', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'How often bulk scan fires the next shot on its own when Auto is turned on.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 4, 16, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: autoScanInterval.toDouble(),
+                    min: kMinAutoScanIntervalSeconds.toDouble(),
+                    max: kMaxAutoScanIntervalSeconds.toDouble(),
+                    divisions: kMaxAutoScanIntervalSeconds - kMinAutoScanIntervalSeconds,
+                    label: '${autoScanInterval}s',
+                    onChanged: (v) => autoScanIntervalController.setSeconds(v.round()),
+                  ),
+                ),
+                SizedBox(
+                  width: 32,
+                  child: Text('${autoScanInterval}s', textAlign: TextAlign.end),
+                ),
+              ],
             ),
           ),
           const Padding(
