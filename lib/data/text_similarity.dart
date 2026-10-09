@@ -8,6 +8,19 @@ String _normalize(String s) {
   return s.toLowerCase().replaceAll(RegExp(r"[^a-z0-9 ]"), '').replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
+const _openQuotes = {'"', '“', '‘'};
+const _closeQuotes = {'"', '”', '’'};
+
+/// True if [s] is wrapped start-to-end in quote marks, e.g. a line of lore
+/// quoting dialogue ("Red Alert!") or a card whose own title includes the
+/// quotes (`"Pup"`, `"God"`). Checked on the raw string, before
+/// [_normalize] strips punctuation and loses the distinction.
+bool _isFullyQuoted(String s) {
+  final t = s.trim();
+  if (t.length < 2) return false;
+  return _openQuotes.contains(t[0]) && _closeQuotes.contains(t[t.length - 1]);
+}
+
 Set<String> _bigrams(String s) {
   final n = _normalize(s);
   if (n.length < 2) return {n};
@@ -80,6 +93,14 @@ List<ScoredMatch<T>> bestMatches<T>({
       if (lineLen == 0) continue;
       final ratio = nameLen < lineLen ? nameLen / lineLen : lineLen / nameLen;
       if (ratio < minLengthRatio) continue;
+      // A fully-quoted line is almost always flavor text quoting dialogue
+      // -- which can happen to BE another real card's exact name (The
+      // Naked Truth's entire lore is just "Red Alert!") -- rather than a
+      // title, so it can't support a match against a candidate whose own
+      // name isn't itself quoted. Not applied the other way around: a
+      // quoted title (`"Pup"`) often loses its quote marks to OCR, and an
+      // unquoted line should still be able to match it.
+      if (_isFullyQuoted(line) && !_isFullyQuoted(name)) continue;
       final score = diceSimilarity(name, line);
       if (score > best) {
         best = score;

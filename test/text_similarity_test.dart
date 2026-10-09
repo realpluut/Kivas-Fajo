@@ -193,6 +193,24 @@ void main() {
       );
       expect(results.map((r) => r.value), contains('Engineering Kit'));
     });
+
+    test('a quoted lore line that IS another real card\'s exact name (The Naked Truth / Red Alert!)', () {
+      // The Naked Truth has no game text at all -- its entire text box is
+      // the quoted lore line "Red Alert!", which happens to be the exact
+      // name of a real, unrelated card. Unlike the Bochra/Q2/Takket cases
+      // above, the false-match candidate's name isn't embedded in a longer
+      // sentence, so the length-ratio gate alone can't reject it: the
+      // quoted line and "Red Alert!" are the same length. The quote marks
+      // are the only signal that this is flavor text, not a title.
+      final results = bestMatches<String>(
+        ocrLines: const ['The Naked Truth', 'STAR TREK', 'THE NEXT GENERATION', '"Red Alert!"'],
+        candidates: const ['The Naked Truth', 'Red Alert!'],
+        nameOf: (n) => n,
+      );
+      expect(results.map((r) => r.value), contains('The Naked Truth'));
+      expect(results.first.value, 'The Naked Truth');
+      expect(results.map((r) => r.value), isNot(contains('Red Alert!')));
+    });
   });
 
   group('bestMatches still finds a clean, correctly-read title', () {
@@ -214,6 +232,32 @@ void main() {
       );
       expect(results.first.value, 'Romulan Disruptor');
       expect(results.first.score, 1.0);
+    });
+
+    test('a title whose quote marks are part of the name still matches ("Pup")', () {
+      // The quote-exclusion added for the Naked Truth/Red Alert! case only
+      // disqualifies a quoted line from matching a *non*-quoted candidate
+      // name -- "Pup"'s own name is quoted too, so this must still work.
+      final results = bestMatches<String>(
+        ocrLines: const ['"Pup"', 'STAR TREK', 'DEEP SPACE NINE'],
+        candidates: const ['"Pup"', 'Odo'],
+        nameOf: (n) => n,
+      );
+      expect(results.first.value, '"Pup"');
+      expect(results.first.score, 1.0);
+    });
+
+    test('OCR dropping the quote marks off a quoted title still matches ("Pup")', () {
+      // The common real-world failure mode -- OCR misses thin punctuation
+      // -- must still work even though the line is no longer "quoted" on
+      // either side; the exclusion only triggers when the LINE is quoted
+      // and the candidate isn't, never the reverse.
+      final results = bestMatches<String>(
+        ocrLines: const ['Pup', 'STAR TREK', 'DEEP SPACE NINE'],
+        candidates: const ['"Pup"', 'Odo'],
+        nameOf: (n) => n,
+      );
+      expect(results.first.value, '"Pup"');
     });
   });
 }
