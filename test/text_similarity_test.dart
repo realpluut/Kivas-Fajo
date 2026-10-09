@@ -211,6 +211,33 @@ void main() {
       expect(results.first.value, 'The Naked Truth');
       expect(results.map((r) => r.value), isNot(contains('Red Alert!')));
     });
+
+    test('the same collision with only the opening quote mark read (confirmed on a real scan)', () {
+      // A second real scan of The Naked Truth (Errata printing, which has
+      // actual game text below the lore) came back as '"Red Alert!' --
+      // OCR kept the leading quote but dropped the trailing one off
+      // "Red Alert!", which still beat "The Naked Truth" under the
+      // original both-ends-quoted check. Raw OCR text from that scan.
+      final results = bestMatches<String>(
+        ocrLines: const [
+          'Q INTERRUPT',
+          'STZRER',
+          'TNE RET SERERarie',
+          'THE NAKED TRUTH',
+          '"Red Alert!',
+          "Opponent may report for duty Mortal Q (or any other "
+              "Unique personnel card) from opponent's hand to your "
+              "Crew or Avay leam. That personnel is used as your ovn "
+              'and is "stopped. (Opponent may not report the some '
+              'personnel more than once per game in this manner.)',
+        ],
+        candidates: const ['The Naked Truth', 'Red Alert!'],
+        nameOf: (n) => n,
+      );
+      expect(results.map((r) => r.value), contains('The Naked Truth'));
+      expect(results.first.value, 'The Naked Truth');
+      expect(results.map((r) => r.value), isNot(contains('Red Alert!')));
+    });
   });
 
   group('bestMatches still finds a clean, correctly-read title', () {

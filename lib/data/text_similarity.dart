@@ -9,16 +9,22 @@ String _normalize(String s) {
 }
 
 const _openQuotes = {'"', '“', '‘'};
-const _closeQuotes = {'"', '”', '’'};
 
-/// True if [s] is wrapped start-to-end in quote marks, e.g. a line of lore
-/// quoting dialogue ("Red Alert!") or a card whose own title includes the
-/// quotes (`"Pup"`, `"God"`). Checked on the raw string, before
-/// [_normalize] strips punctuation and loses the distinction.
-bool _isFullyQuoted(String s) {
+/// True if [s] opens with a quote mark, e.g. a line of lore quoting
+/// dialogue ("Red Alert!") or a card whose own title includes the quotes
+/// (`"Pup"`, `"God"`). Checked on the raw string, before [_normalize]
+/// strips punctuation and loses the distinction.
+///
+/// Only the opening quote is required, not a matching closer -- confirmed
+/// against two real scans of The Naked Truth, OCR kept the leading `"`
+/// both times but dropped the trailing one off "Red Alert!" (it sits
+/// right after the "!", and that whole cluster is an easy place for OCR to
+/// lose a character). Requiring both ends let the unquoted-looking result
+/// straight through.
+bool _opensWithQuote(String s) {
   final t = s.trim();
-  if (t.length < 2) return false;
-  return _openQuotes.contains(t[0]) && _closeQuotes.contains(t[t.length - 1]);
+  if (t.isEmpty) return false;
+  return _openQuotes.contains(t[0]);
 }
 
 Set<String> _bigrams(String s) {
@@ -93,14 +99,15 @@ List<ScoredMatch<T>> bestMatches<T>({
       if (lineLen == 0) continue;
       final ratio = nameLen < lineLen ? nameLen / lineLen : lineLen / nameLen;
       if (ratio < minLengthRatio) continue;
-      // A fully-quoted line is almost always flavor text quoting dialogue
-      // -- which can happen to BE another real card's exact name (The
-      // Naked Truth's entire lore is just "Red Alert!") -- rather than a
-      // title, so it can't support a match against a candidate whose own
-      // name isn't itself quoted. Not applied the other way around: a
-      // quoted title (`"Pup"`) often loses its quote marks to OCR, and an
-      // unquoted line should still be able to match it.
-      if (_isFullyQuoted(line) && !_isFullyQuoted(name)) continue;
+      // A line opening with a quote mark is almost always flavor text
+      // quoting dialogue -- which can happen to BE another real card's
+      // exact name (The Naked Truth's entire lore is just "Red Alert!")
+      // -- rather than a title, so it can't support a match against a
+      // candidate whose own name doesn't also open with a quote. Not
+      // applied the other way around: a quoted title (`"Pup"`) often
+      // loses its quote marks to OCR, and an unquoted line should still
+      // be able to match it.
+      if (_opensWithQuote(line) && !_opensWithQuote(name)) continue;
       final score = diceSimilarity(name, line);
       if (score > best) {
         best = score;
