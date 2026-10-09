@@ -111,8 +111,11 @@ class ManualScreen extends StatelessWidget {
               'From the Scan tab, tap "Take Photo" -- this opens a live camera preview right in the app, no '
                   'handing off to the phone\'s own camera app or its confirm/retake screen. Frame both the '
                   'title and the tiny copyright line near the edge, then tap the shutter. It goes straight '
-                  'into reading the card, no extra tap to confirm the photo. A torch toggle sits next to the '
-                  'shutter for dim light; tap the ✕ to back out without capturing.',
+                  'into reading the card, no extra tap to confirm the photo. The camera opens in black-and-'
+                  'white at 1.5x zoom with the flash off by default -- that combination reads tiny printed '
+                  'text far more reliably than color/full-frame/flash-on does; a torch toggle still sits next '
+                  'to the shutter for a genuinely dark room, and pinch to adjust the zoom further. Tap the ✕ '
+                  'to back out without capturing.',
             ],
             subsections: [
               _SubSection(
@@ -124,14 +127,17 @@ class ManualScreen extends StatelessWidget {
                     '● Amber check -- only one of those two signals matched, still plausible.\n'
                     '● Red cross -- the border color in the photo actively rules this printing out.\n\n'
                     'Tap + on the right printing to add it, or tap the row first to look at the full card '
-                    'before deciding.',
+                    'before deciding. Either way, tapping "Scan Another" reopens the camera already framed '
+                    'the same way and fires the next shot on its own after a brief moment to swap the card in '
+                    '-- no second shutter tap needed.',
               ),
               _SubSection(
-                heading: 'If it doesn\'t work',
-                text: 'A "Scan details" panel appears on any no-match or error screen -- it shows exactly what '
-                    'text was read, the corner brightness readings used for border detection, and the year it '
-                    'detected. Usually the fix is getting closer, filling the frame more, or evening out the '
-                    'light.',
+                heading: 'Scan details',
+                text: 'Every result screen -- a clean add, an ambiguous pick, a no-match, or an error -- has a '
+                    '"Scan details" panel at the bottom. It shows exactly what text was read, the corner '
+                    'brightness readings used for border detection, and the year it detected, so you can '
+                    'double-check a scan even when it went right, not just when it didn\'t. If it didn\'t go '
+                    'right, the usual fix is getting closer, filling the frame more, or evening out the light.',
               ),
             ],
           ),
@@ -139,31 +145,26 @@ class ManualScreen extends StatelessWidget {
             number: '06',
             title: 'Bulk scanning',
             paragraphs: [
-              'Tap "Bulk Scan (live)" from the idle scan screen to keep the camera open continuously -- built '
-                  'for running through a stack or a binder page without tapping anything between cards. The '
-                  'screen stays awake for the whole session.',
+              'Tap "Bulk Scan (live)" from the idle scan screen to go through a stack or binder page without '
+                  'returning to the Scan tab between cards. It\'s the exact same camera, photo quality, and '
+                  'per-card result screen as a single photo scan -- the only difference is a loop that can '
+                  'fire the shutter for you. The screen stays awake for the whole session.',
             ],
             subsections: [
               _SubSection(
-                heading: 'The controls, top bar',
-                text: 'Torch (on by default), VHQ/MAX resolution, pinch-to-zoom (the current multiplier shows '
-                    'next to the counter), and an exposure slider on phones that support it.',
+                heading: 'Auto-scan',
+                text: 'Tap the play icon next to the shutter to turn on Auto -- it re-fires the shot every '
+                    'few seconds on its own instead of waiting for a tap, so you can just keep swapping cards '
+                    'in front of the camera. The same control (now a pause icon) also sits on whichever '
+                    'result screen Auto lands you on, so you can stop the loop right there without going back '
+                    'to the camera first. Auto pauses itself automatically whenever a match is ambiguous and '
+                    'needs a manual pick, then picks back up once you choose a printing.',
               ),
               _SubSection(
                 heading: 'Scan scope',
-                text: 'Just under the top bar, a scope bar reads "All Sets" by default. Tap it to restrict '
-                    'matching to one chosen set instead -- fewer possible cards to match against means fewer '
-                    'false ambiguous prompts. "All Sets" is always the first option, for a mixed box of random '
-                    'cards.',
-              ),
-              _SubSection(
-                heading: 'While it runs',
-                text: 'Every few seconds the camera captures whatever card is in frame, reads it, and adds it '
-                    'automatically on a confident match -- a short high beep confirms a successful add; a '
-                    'lower double-blip means it needs attention (an ambiguous match). When a match is '
-                    'ambiguous, capturing pauses and the screen freezes on the exact photo it\'s asking about, '
-                    'so the picker below always matches what\'s on screen. Pick a printing or tap Skip to '
-                    'resume.',
+                text: 'The filter icon in the top-right corner restricts matching to one chosen set instead '
+                    'of the whole database -- fewer possible cards to match against means fewer false '
+                    'ambiguous prompts. Leave it on "All Sets" for a mixed box of random cards.',
               ),
             ],
           ),

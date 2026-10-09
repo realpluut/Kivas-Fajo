@@ -2,7 +2,7 @@
 /// Bump this (and add a matching [ReleaseNote] at the top of [kReleaseNotes])
 /// whenever a set of related fixes/features ships -- grouped by round of
 /// work, not one entry per individual change.
-const String kAppVersionLabel = '1.10 Beta';
+const String kAppVersionLabel = '2.0';
 
 enum ReleaseTag { initial, feature, bugFix, dataFix }
 
@@ -25,6 +25,18 @@ class ReleaseNote {
 
 /// Newest first -- this reads as a "what's new" feed, not a history book.
 const List<ReleaseNote> kReleaseNotes = [
+  ReleaseNote(
+    version: '2.0',
+    tag: ReleaseTag.feature,
+    title: 'Bulk scan rebuilt, major scanning accuracy fixes',
+    bullets: [
+      'Bulk scan is rebuilt on the same pipeline as the single-photo scanner -- same high hit rate, same per-card result screen. Turn on Auto (next to the shutter) to keep scanning automatically every few seconds instead of tapping each time; pause it from there or from the result screen it lands on.',
+      'A reworked matching engine fixes a whole class of false reads -- classification stamps, stat badges, lore text that happens to name-check a different real card, and more -- instead of patching them one at a time.',
+      'Fixed The Naked Truth reading as the unrelated card Red Alert! (its own flavor text literally quotes that exact name), and Errata reprints getting auto-picked over the real printing whenever the year couldn\'t be read off the photo.',
+      'The scanner now shoots in black-and-white at 1.5x zoom with the flash off by default, and border-color detection is fixed for low-contrast setups (glare, two-toned scanning trays) -- both read tiny copyright/year text and card borders far more reliably.',
+      '"Scan details" diagnostics are now available on every result, not just failures, so you can double-check what was read even on a clean add. "Scan Another" (and bulk scan\'s Auto) fires the next shot automatically instead of waiting for another shutter tap.',
+    ],
+  ),
   ReleaseNote(
     version: '1.10 Beta',
     tag: ReleaseTag.feature,
