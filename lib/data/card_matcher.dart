@@ -41,7 +41,18 @@ class CardMatchCandidate {
   /// Collector's Tin cards are physically dated 1994 despite releasing in
   /// 1995), so neither signal alone is trustworthy -- but a printing that
   /// nothing else can match on both is a confident pick.
-  int get confidence => (yearMatches ? 1 : 0) + (borderMatches ? 1 : 0);
+  ///
+  /// Border is never credited for an Errata-rarity printing: every
+  /// physical errata reprint has the same black border by construction
+  /// (it's recorded once at the set level, not per card -- see
+  /// isErrataRarity), so a detected black border matching one isn't
+  /// evidence about which specific original printing is actually in
+  /// hand -- it's true of every errata card regardless. Crediting it let
+  /// an Errata printing out-score, and silently auto-pick over, the real
+  /// original whenever the year wasn't read (most original sets have no
+  /// border color on record at all, so they could never earn this point
+  /// to begin with -- see The Naked Truth / Red Alert!).
+  int get confidence => (yearMatches ? 1 : 0) + (borderMatches && !isErrataRarity(card.rarity) ? 1 : 0);
 }
 
 class CardMatchResult {
@@ -342,7 +353,20 @@ Future<CardMatchResult> matchCardFromOcr({
     } else if (viable.isNotEmpty) {
       final topConfidence = viable.first.confidence;
       final atTop = viable.where((r) => r.confidence == topConfidence).toList();
-      if (topConfidence > 0 && atTop.length == 1) autoPick = atTop.first;
+      if (topConfidence > 0 && atTop.length == 1) {
+        autoPick = atTop.first;
+      } else if (topConfidence == 0 && atTop.length > 1) {
+        // No year or border evidence either way for any of them. An
+        // Errata reprint is a niche reference product -- far more often
+        // someone's scanning the genuine original than its corrected
+        // reissue -- so it shouldn't win a bare tie just because nothing
+        // ruled it out, as long as exactly one non-Errata printing is
+        // still in the running. Leaves a real multi-printing ambiguity
+        // (more than one non-Errata candidate) for a manual pick, same
+        // as before.
+        final nonErrata = atTop.where((r) => !isErrataRarity(r.card.rarity)).toList();
+        if (nonErrata.length == 1) autoPick = nonErrata.first;
+      }
     }
   }
 

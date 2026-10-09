@@ -1,5 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:star_trek_ccg_collector/data/card_matcher.dart';
+import 'package:star_trek_ccg_collector/data/models/trek_card.dart';
+
+TrekCard _card({String? rarity}) => TrekCard(
+      id: 'test-card',
+      pageTitle: 'Test Card',
+      name: 'Test Card',
+      baseName: 'Test Card',
+      setId: 'test-set',
+      rarity: rarity,
+      type: null,
+      affiliation: null,
+      printing: null,
+      propertyLogo: null,
+      lore: null,
+      gameText: null,
+      characteristics: const [],
+      legalCardPools: const [],
+      legalRulesSets: const [],
+      characters: const [],
+      actors: const [],
+      externalLinks: const [],
+      wikiUrl: '',
+      imageUrl: null,
+    );
 
 /// isStatBadgeLine filters out Ship/Facility stat badges ("SHIELDS 32",
 /// "WEAPONS 9", "RANGE 7") before name matching even runs, because a
@@ -140,6 +164,44 @@ void main() {
       expect(isErrataRarity('Rare'), isFalse);
       expect(isErrataRarity('Uncommon'), isFalse);
       expect(isErrataRarity(null), isFalse);
+    });
+  });
+
+  group('CardMatchCandidate.confidence', () {
+    test('an ordinary printing is credited for a border match', () {
+      final c = CardMatchCandidate(
+        card: _card(rarity: 'Uncommon'),
+        set: null,
+        yearMatches: false,
+        borderMatches: true,
+        contradicted: false,
+      );
+      expect(c.confidence, 1);
+    });
+
+    test(
+        'an Errata printing is NOT credited for a border match -- every physical errata '
+        'reprint is black by construction, so matching it is not real evidence '
+        '(The Naked Truth / Red Alert!)', () {
+      final c = CardMatchCandidate(
+        card: _card(rarity: 'Physical Errata'),
+        set: null,
+        yearMatches: false,
+        borderMatches: true,
+        contradicted: false,
+      );
+      expect(c.confidence, 0);
+    });
+
+    test('an Errata printing is still credited for a year match -- that signal is unaffected', () {
+      final c = CardMatchCandidate(
+        card: _card(rarity: 'Physical Errata'),
+        set: null,
+        yearMatches: true,
+        borderMatches: true,
+        contradicted: false,
+      );
+      expect(c.confidence, 1);
     });
   });
 }
