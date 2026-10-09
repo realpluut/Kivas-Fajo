@@ -366,6 +366,17 @@ _BORDER_COLOR_OVERRIDES = {
     "Warp Pack (expansion)": "white",
 }
 
+# Printing field as recorded in the card's own infobox, overridden where two
+# separate pages in the same set share the same name/rarity/affiliation/
+# printing and would otherwise render as identical, indistinguishable rows
+# in the app's card list (e.g. a print-sheet misprint and its corrected
+# counterpart, both legitimately "Normal" printings per their infoboxes).
+# Keyed by page_title. Add to this as more such collisions get found.
+_PRINTING_OVERRIDES = {
+    "Amanda's Parents (QC)": "Normal (print-sheet error)",
+    "Amanda's Parents (QC) (corrected)": "Normal (corrected)",
+}
+
 # Sub-editions the wiki's top-level Expansions table no longer lists
 # separately (see parse_sets), but that collectors track as distinct
 # printings from their parent set. "suffix" is the exact trailing text on
@@ -767,7 +778,7 @@ def main():
                 "rarity": infobox.get("rarity") or r["rarity"] or None,
                 "type": normalize_type(infobox.get("type") or r["type"] or None),
                 "affiliation": infobox.get("affiliation") or r["affiliation"] or None,
-                "printing": infobox.get("printing"),
+                "printing": _PRINTING_OVERRIDES.get(r["page_title"]) or infobox.get("printing"),
                 "property_logo": infobox.get("property_logo"),
                 "lore": infobox.get("lore"),
                 "game_text": infobox.get("game_text"),
