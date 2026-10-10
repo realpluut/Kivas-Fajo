@@ -182,6 +182,13 @@ void main() {
       final fragments = propertyLogoFragments(['Deep Space Nine']);
       expect(fragments, contains('Deep Space Nine'));
     });
+
+    test(
+        'adds a digit twin of a spelled-out number in the logo -- the real card "Deep Space 9" '
+        'shares no bigrams at all with the spelled-out property logo "Deep Space Nine" otherwise', () {
+      final fragments = propertyLogoFragments(['Star Trek: Deep Space Nine']);
+      expect(fragments, containsAll(['Deep Space Nine', 'Deep Space 9']));
+    });
   });
 
   group('looksLikePropertyLogoLine', () {
@@ -257,6 +264,13 @@ void main() {
       expect(isFranchiseNamedCard('Deep Space Nine', fragments), isTrue);
       expect(isFranchiseNamedCard('Voyager', fragments), isTrue);
       expect(isFranchiseNamedCard('Enterprise', fragments), isTrue);
+    });
+
+    test(
+        'flags the digit-styled real card "Deep Space 9" too, via propertyLogoFragments\' '
+        'number-word variant -- the actual reported case: "Oops!" (TTWT) kept losing to it', () {
+      expect(isFranchiseNamedCard('Deep Space 9', fragments), isTrue);
+      expect(isFranchiseNamedCard('Oops!', fragments), isFalse);
     });
 
     test(

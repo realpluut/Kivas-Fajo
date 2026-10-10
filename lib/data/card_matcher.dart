@@ -165,6 +165,42 @@ final _classificationStampPattern = RegExp(r'^(science|medical|security|engineer
 /// from being treated as a title on its own.
 bool isClassificationStampLine(String line) => _classificationStampPattern.hasMatch(line.trim());
 
+const _numberWords = {
+  '1': 'one',
+  '2': 'two',
+  '3': 'three',
+  '4': 'four',
+  '5': 'five',
+  '6': 'six',
+  '7': 'seven',
+  '8': 'eight',
+  '9': 'nine',
+  '10': 'ten',
+};
+
+/// Adds a digit<->spelled-out-number twin of [fragment] when it contains
+/// one, alongside the original -- Trek card titles for the same real thing
+/// sometimes alternate between the two styles ("Deep Space 9" vs. the
+/// property logo "Deep Space Nine"), and the two spellings share no
+/// bigrams at all, so without this, isFranchiseNamedCard's own stricter
+/// threshold (needed to avoid flagging unrelated real names that merely
+/// echo logo wording -- see its doc comment) could never recognize them
+/// as the same text no matter how it's tuned.
+Set<String> _withNumberWordVariant(String fragment) {
+  final variants = {fragment};
+  for (final entry in _numberWords.entries) {
+    final digitPattern = RegExp('\\b${entry.key}\\b');
+    if (digitPattern.hasMatch(fragment)) {
+      variants.add(fragment.replaceAll(digitPattern, entry.value));
+    }
+    final wordPattern = RegExp('\\b${entry.value}\\b', caseSensitive: false);
+    if (wordPattern.hasMatch(fragment)) {
+      variants.add(fragment.replaceAll(wordPattern, entry.key));
+    }
+  }
+  return variants;
+}
+
 /// Breaks each property-logo string on record (e.g. "Star Trek: The Next
 /// Generation", "Star Trek II: The Wrath of Khan") into the pieces the
 /// physical card actually prints as separate banner lines -- "Star Trek"
@@ -183,7 +219,7 @@ List<String> propertyLogoFragments(Iterable<String> propertyLogos) {
     fragments.add(logo.substring(0, colon).trim());
     fragments.add(logo.substring(colon + 1).trim());
   }
-  return fragments.toList();
+  return fragments.expand(_withNumberWordVariant).toList();
 }
 
 /// True when [line] is a strong fuzzy match for one of [propertyLogoFragments]
