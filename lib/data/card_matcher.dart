@@ -146,6 +146,26 @@ final _facilitySubtypeWords = {'outpost', 'station'};
 /// it (*"Shields Up!"*-style) to lose to instead.
 bool isFacilitySubtypeLine(String line) => _facilitySubtypeWords.contains(line.trim().toLowerCase());
 
+final _shipClassLinePattern = RegExp(r'^(\S+\s+){0,2}class$', caseSensitive: false);
+
+/// True for a Ship-type card's class banner, printed as `<ClassName> CLASS`
+/// near the bottom of the card ("CONSTITUTION CLASS", "GALAXY CLASS", ...)
+/// -- confirmed against the wiki's own "Class" infobox field as a format
+/// every Ship card carries. Unlike isFacilitySubtypeLine's fixed two-word
+/// set, the class name itself is open-ended (dozens across the catalog), so
+/// this can't be a hardcoded list the way Outpost/Station is -- it's
+/// recognized structurally instead: the trailing word "CLASS" is the fixed,
+/// always-printed-bare part of the format, and no real card name in the
+/// catalog is three words or fewer and ends in "Class" (the one card whose
+/// name ends in that word, "Battle Stations: Sovereign Class", is five
+/// words with the colon, well past this gate). "CONSTITUTION CLASS"
+/// bigram-matches the unrelated real card "I.S.S. Constitution" at 0.79 --
+/// past minScore and its own length-ratio gate -- well ahead of "Starship
+/// Constitution"'s true 0.63 off the very same line: the same
+/// MEDICAL-vs-"Medical Kit" shape as isClassificationStampLine, just via
+/// the class banner instead of a personnel stamp.
+bool isShipClassLine(String line) => _shipClassLinePattern.hasMatch(line.trim());
+
 // The game's personnel classification stamp is one of exactly these four
 // words (confirmed against the wiki's own category structure -- Command,
 // Diplomacy, etc. aren't classifications in this game, just skills/roles),
@@ -406,8 +426,12 @@ Future<CardMatchResult> matchCardFromOcr({
   // "RANGE <number>") can coincidentally come out the exact same length
   // as an unrelated real card name -- see isStatBadgeLine's doc comment --
   // so they're dropped outright before matching rather than relying on a
-  // length check to catch them.
-  final filteredLines = [for (final l in allLines) if (!isStatBadgeLine(l)) l];
+  // length check to catch them. A Ship's Class banner ("CONSTITUTION
+  // CLASS") gets the same treatment -- see isShipClassLine -- it's always
+  // its own infobox row, never the other half of a split title the way
+  // isFacilitySubtypeLine's words sometimes are, so there's no reason to
+  // keep it around for shortLinePairs below.
+  final filteredLines = [for (final l in allLines) if (!isStatBadgeLine(l) && !isShipClassLine(l)) l];
   final lines = filteredLines.isNotEmpty ? filteredLines : allLines;
 
   final year = extractYear([?rotatedRecognized, recognized]);

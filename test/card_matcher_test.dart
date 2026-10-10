@@ -229,6 +229,20 @@ void main() {
     });
   });
 
+  group('isShipClassLine', () {
+    test('matches a Ship class banner regardless of the class name', () {
+      expect(isShipClassLine('CONSTITUTION CLASS'), isTrue);
+      expect(isShipClassLine('Galaxy Class'), isTrue);
+      expect(isShipClassLine('class'), isTrue);
+    });
+
+    test('does not match a real card name that happens to end in "Class"', () {
+      expect(isShipClassLine('Battle Stations: Sovereign Class'), isFalse);
+      expect(isShipClassLine('Class J Cargo Ship'), isFalse);
+      expect(isShipClassLine(''), isFalse);
+    });
+  });
+
   group('stripTrailingPropertyLogo', () {
     final fragments = propertyLogoFragments(['Star Trek: The Original Series']);
 
