@@ -129,6 +129,23 @@ final _statBadgePattern = RegExp(r'^(shields|weapons|range)\s*\d*$', caseSensiti
 /// and dropped outright instead.
 bool isStatBadgeLine(String line) => _statBadgePattern.hasMatch(line.trim());
 
+final _facilitySubtypeWords = {'outpost', 'station'};
+
+/// True for a Facility-type card's subtype banner, printed as a bare word
+/// near the bottom of the card ("OUTPOST", "STATION") -- confirmed against
+/// the wiki's own category structure (Category:Outpost (Star Trek CCG 1E),
+/// Category:Station (Star Trek CCG 1E)) as the only two such banners in
+/// this game, and no real card is named either word alone. Same shape and
+/// risk profile as isClassificationStampLine's four classification stamps
+/// -- a small, closed, always-printed-bare-and-alone set -- not the much
+/// larger, free-text card TYPE banner ("EQUIPMENT", "ARTIFACT", ...) that
+/// deliberately isn't hardcoded elsewhere in this file (see bestMatches'
+/// doc comment above). "STATION" alone bigram-matches the unrelated real
+/// card "Mutation" at 0.77 -- well past minScore -- the same way "MEDICAL"
+/// does against "Medical Kit", just without a longer real title alongside
+/// it (*"Shields Up!"*-style) to lose to instead.
+bool isFacilitySubtypeLine(String line) => _facilitySubtypeWords.contains(line.trim().toLowerCase());
+
 // The game's personnel classification stamp is one of exactly these four
 // words (confirmed against the wiki's own category structure -- Command,
 // Diplomacy, etc. aren't classifications in this game, just skills/roles),
@@ -180,6 +197,41 @@ List<String> propertyLogoFragments(Iterable<String> propertyLogos) {
 /// missing new garbled variants (see bestMatches' doc comment on why a
 /// franchise-logo exclusion list was dropped in favor of the length-ratio
 /// gate in the first place).
+/// Strips a trailing run of 1-3 words from [line] when that suffix is a
+/// strong, near-exact match for one of [propertyLogoFragments] -- a card's
+/// own title and its franchise banner sometimes print close enough
+/// together that OCR reads them as a single run-on line with no break
+/// ("Deep Spoce Station K-7 STAR TREK"), which pushes the line's length
+/// well past the real candidate's via bestMatches' length-ratio gate and
+/// loses it entirely. Tries the longest suffix first so "STAR TREK" (two
+/// words) strips as one unit rather than leaving a dangling "STAR" behind.
+/// Deliberately strict (0.8/0.8, vs. looksLikePropertyLogoLine's 0.6/0.6)
+/// since this changes the line itself rather than just classifying it --
+/// a real multi-word title that happens to end in a franchise-ish word
+/// ("U.S.S. Voyager") must not get truncated into something that no
+/// longer matches its own card. Only ever consulted as a last-resort
+/// fallback (see matchCardFromOcr) after that title would already have
+/// matched on its own unstripped, so a case like that never actually
+/// reaches this function in practice.
+String stripTrailingPropertyLogo(String line, List<String> propertyLogoFragments) {
+  if (propertyLogoFragments.isEmpty) return line;
+  final words = line.trim().split(RegExp(r'\s+'));
+  for (var take = 3; take >= 1; take--) {
+    if (words.length <= take) continue;
+    final suffix = words.sublist(words.length - take).join(' ');
+    final hit = bestMatches<String>(
+      ocrLines: [suffix],
+      candidates: propertyLogoFragments,
+      nameOf: (f) => f,
+      minScore: 0.8,
+      minLengthRatio: 0.8,
+      limit: 1,
+    );
+    if (hit.isNotEmpty) return words.sublist(0, words.length - take).join(' ');
+  }
+  return line;
+}
+
 bool looksLikePropertyLogoLine(String line, List<String> propertyLogoFragments) {
   if (propertyLogoFragments.isEmpty) return false;
   return bestMatches<String>(
@@ -338,6 +390,16 @@ Future<CardMatchResult> matchCardFromOcr({
   // longer candidate name purely because it's a near-complete subset of
   // it, and a real title match is never that lopsided in length.
   var matches = bestMatches<String>(ocrLines: lines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
+  // A single-line match grounded solely on a Facility subtype banner
+  // ("OUTPOST", "STATION") is exactly the kind of coincidence
+  // isStatBadgeLine/isClassificationStampLine already guard against
+  // elsewhere -- see isFacilitySubtypeLine. Unlike those, this word is
+  // also the piece shortLinePairs needs to recombine a split title
+  // ("Neutral" + "OUTPOST"), so it can't just be dropped from the line
+  // pool outright the way stat badges are -- only a match grounded solely
+  // on it gets discarded here, leaving the word itself free to still take
+  // part in pairing below.
+  matches = [for (final m in matches) if (!isFacilitySubtypeLine(m.matchedLine)) m];
   // Only fall back to combining short-line pairs (see shortLinePairs) when
   // single-line matching found nothing at all -- e.g. a split title like
   // an Outpost's "Romulan" / "OUTPOST". Trying pairs unconditionally
@@ -374,7 +436,13 @@ Future<CardMatchResult> matchCardFromOcr({
     // "OUTPOST" are, just a word that happens to prefix-match unrelated
     // real cards (see isClassificationStampLine).
     final pairableLines = [for (final l in lines) if (!isClassificationStampLine(l)) l];
-    final pairedLines = [...lines, ...shortLinePairs(pairableLines)];
+    // A run-on line with the franchise banner glued onto the end of the
+    // real title (see stripTrailingPropertyLogo) only ever needs trying
+    // here, in the same already-gated fallback lane as pairing -- a title
+    // that already matched cleanly on its own unstripped never reaches
+    // this far, so stripping can't touch it.
+    final strippedLines = [for (final l in lines) stripTrailingPropertyLogo(l, propertyLogoFragments)];
+    final pairedLines = [...lines, ...shortLinePairs(pairableLines), ...strippedLines];
     final pairedMatches = bestMatches<String>(ocrLines: pairedLines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
     matches = matches.isEmpty
         ? pairedMatches

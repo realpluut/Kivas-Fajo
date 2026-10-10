@@ -208,6 +208,42 @@ void main() {
     });
   });
 
+  group('isFacilitySubtypeLine', () {
+    test('matches the two known Facility subtype banners', () {
+      expect(isFacilitySubtypeLine('OUTPOST'), isTrue);
+      expect(isFacilitySubtypeLine('STATION'), isTrue);
+      expect(isFacilitySubtypeLine('station'), isTrue);
+    });
+
+    test('does not match unrelated text', () {
+      expect(isFacilitySubtypeLine('Mutation'), isFalse);
+      expect(isFacilitySubtypeLine('Deep Space Station K-7'), isFalse);
+      expect(isFacilitySubtypeLine(''), isFalse);
+    });
+  });
+
+  group('stripTrailingPropertyLogo', () {
+    final fragments = propertyLogoFragments(['Star Trek: The Original Series']);
+
+    test(
+        'strips the actual garbled franchise banner reported glued onto a real title '
+        '(Deep Space Station K-7, read as one run-on line with no break before "STAR TREK")', () {
+      expect(stripTrailingPropertyLogo('Deep Spoce Station K-7 STAR TREK', fragments), 'Deep Spoce Station K-7');
+    });
+
+    test('leaves a line with nothing logo-shaped at the end unchanged', () {
+      expect(stripTrailingPropertyLogo('Deep Spoce Station K-7', fragments), 'Deep Spoce Station K-7');
+    });
+
+    test('never strips the whole line down to nothing', () {
+      expect(stripTrailingPropertyLogo('Star Trek', propertyLogoFragments(['Star Trek'])), 'Star Trek');
+    });
+
+    test('with no fragments to check against, never changes the line', () {
+      expect(stripTrailingPropertyLogo('Deep Spoce Station K-7 STAR TREK', []), 'Deep Spoce Station K-7 STAR TREK');
+    });
+  });
+
   group('isFranchiseNamedCard', () {
     final fragments = propertyLogoFragments([
       'Star Trek: Deep Space Nine',
