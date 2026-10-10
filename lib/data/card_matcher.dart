@@ -192,6 +192,30 @@ bool looksLikePropertyLogoLine(String line, List<String> propertyLogoFragments) 
   ).isNotEmpty;
 }
 
+/// True when [candidateName] is itself (near-exactly) one of the franchise
+/// banner fragments -- the handful of real cards named "Deep Space Nine",
+/// "Enterprise", "Voyager", "First Contact", "Insurrection", "Lower Decks",
+/// "The Final Frontier", "The Undiscovered Country". Deliberately much
+/// stricter than [looksLikePropertyLogoLine] (0.95/0.9 vs. 0.6/0.6):
+/// that one tolerates OCR noise when checking a *line* someone is trying to
+/// read as a title, where a loose match is still useful signal; this one
+/// classifies a *candidate name itself*, where a loose threshold would
+/// wrongly net real, unrelated card names that merely echo logo wording
+/// ("Darmok" vs. "Armada", "The Next Emanation" vs. "The Next Generation",
+/// "Regenerate" vs. "Generations", ...) -- confirmed against the full
+/// catalog to land on exactly those eight names and nothing else.
+bool isFranchiseNamedCard(String candidateName, List<String> propertyLogoFragments) {
+  if (propertyLogoFragments.isEmpty) return false;
+  return bestMatches<String>(
+    ocrLines: [candidateName],
+    candidates: propertyLogoFragments,
+    nameOf: (f) => f,
+    minScore: 0.95,
+    minLengthRatio: 0.9,
+    limit: 1,
+  ).isNotEmpty;
+}
+
 /// True for an Errata-rarity printing ("Physical Errata", "Virtual Errata",
 /// bare "Errata", and scrape typos like "Pgtsical Errata" -- matches on the
 /// "errata" substring rather than the exact string for that reason). These
@@ -369,6 +393,24 @@ Future<CardMatchResult> matchCardFromOcr({
       autoPick: null,
     );
   }
+
+  // A handful of real cards are named after the franchise itself ("Deep
+  // Space Nine", "Enterprise", "Voyager", ...) -- see isFranchiseNamedCard.
+  // Their own property-logo banner, printed on literally every card from
+  // that franchise, scores a perfect match against their name too, so it's
+  // barely any evidence this particular card is the one named after it
+  // rather than any other card sharing the same logo -- reading "DEEP
+  // SPACE NINE" off a DS9 personnel card's own franchise banner ties the
+  // real card "Deep Space Nine" with that personnel's own (also perfectly
+  // read) title, "Lam", on an unrelated line, and only wins the tie by
+  // chance of sort order. When something else in the same OCR text *also*
+  // cleared the bar on a different line, that's real discriminating
+  // evidence and should win instead -- a franchise-named candidate only
+  // stands on its own when nothing else matched at all, which is exactly
+  // the case of genuinely scanning that card with nothing else
+  // coincidentally matching.
+  final nonFranchiseNamed = matches.where((m) => !isFranchiseNamedCard(m.value, propertyLogoFragments)).toList();
+  if (nonFranchiseNamed.isNotEmpty) matches = nonFranchiseNamed;
 
   // Keep names within a small margin of the top score -- OCR noise can put
   // the real match just under a slightly-higher false positive -- but only

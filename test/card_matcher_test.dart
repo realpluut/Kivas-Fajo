@@ -208,6 +208,36 @@ void main() {
     });
   });
 
+  group('isFranchiseNamedCard', () {
+    final fragments = propertyLogoFragments([
+      'Star Trek: Deep Space Nine',
+      'Star Trek: Voyager',
+      'Star Trek: Enterprise',
+      'Star Trek: First Contact',
+      'Star Trek: Insurrection',
+    ]);
+
+    test('flags the real cards named after the franchise itself', () {
+      expect(isFranchiseNamedCard('Deep Space Nine', fragments), isTrue);
+      expect(isFranchiseNamedCard('Voyager', fragments), isTrue);
+      expect(isFranchiseNamedCard('Enterprise', fragments), isTrue);
+    });
+
+    test(
+        'does not flag a real, unrelated card name that merely echoes logo wording -- '
+        'a loose threshold here would net "Darmok" (vs. "Armada"), "The Next Emanation" '
+        '(vs. "The Next Generation"), "Regenerate" (vs. "Generations"), etc.', () {
+      expect(isFranchiseNamedCard('Darmok', fragments), isFalse);
+      expect(isFranchiseNamedCard('The Next Emanation', fragments), isFalse);
+      expect(isFranchiseNamedCard('Regenerate', fragments), isFalse);
+      expect(isFranchiseNamedCard('Lam', fragments), isFalse);
+    });
+
+    test('with no fragments to check against, never flags anything', () {
+      expect(isFranchiseNamedCard('Voyager', []), isFalse);
+    });
+  });
+
   group('CardMatchCandidate.confidence', () {
     test('an ordinary printing is credited for a border match', () {
       final c = CardMatchCandidate(
