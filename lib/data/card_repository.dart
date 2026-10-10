@@ -78,4 +78,15 @@ class CardRepository {
     final rows = await db.query('cards', where: 'base_name = ?', whereArgs: [baseName], orderBy: 'set_id ASC');
     return rows.map(TrekCard.fromRow).toList();
   }
+
+  /// Every distinct property-logo string in the database (e.g. "Star Trek:
+  /// The Next Generation", "Star Trek II: The Wrath of Khan") -- used by the
+  /// scanner to recognize an OCR'd read of that franchise banner text for
+  /// what it is, instead of occasionally mistaking it for a card title (see
+  /// propertyLogoFragments).
+  Future<List<String>> distinctPropertyLogos() async {
+    final db = await _db.database;
+    final rows = await db.rawQuery('SELECT DISTINCT property_logo FROM cards WHERE property_logo IS NOT NULL');
+    return rows.map((r) => r['property_logo'] as String).toList();
+  }
 }

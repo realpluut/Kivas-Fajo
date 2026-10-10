@@ -167,6 +167,47 @@ void main() {
     });
   });
 
+  group('propertyLogoFragments', () {
+    test('splits a colon-joined logo into its two banner pieces, plus the constant "Star Trek"', () {
+      final fragments = propertyLogoFragments(['Star Trek: The Next Generation']);
+      expect(fragments, containsAll(['Star Trek', 'The Next Generation']));
+    });
+
+    test('keeps the film number with "Star Trek" for numbered films', () {
+      final fragments = propertyLogoFragments(['Star Trek II: The Wrath of Khan']);
+      expect(fragments, containsAll(['Star Trek II', 'The Wrath of Khan']));
+    });
+
+    test('keeps a logo with no colon as-is', () {
+      final fragments = propertyLogoFragments(['Deep Space Nine']);
+      expect(fragments, contains('Deep Space Nine'));
+    });
+  });
+
+  group('looksLikePropertyLogoLine', () {
+    final fragments = propertyLogoFragments(['Star Trek: The Next Generation']);
+
+    test('recognizes a clean read of a banner fragment', () {
+      expect(looksLikePropertyLogoLine('THE NEXT GENERATION', fragments), isTrue);
+    });
+
+    test(
+        'recognizes the actual garbled OCR read reported against a real Neutral Outpost scan '
+        '(an "O" misread as "D") -- the card that kept getting recognized as the unrelated '
+        'real card "The Next Emanation"', () {
+      expect(looksLikePropertyLogoLine('THE NEXT GENERATIDN', fragments), isTrue);
+    });
+
+    test('does not flag an unrelated line', () {
+      expect(looksLikePropertyLogoLine('OUTPOST', fragments), isFalse);
+      expect(looksLikePropertyLogoLine('Neutral', fragments), isFalse);
+    });
+
+    test('with no fragments to check against, never flags anything', () {
+      expect(looksLikePropertyLogoLine('THE NEXT GENERATIDN', []), isFalse);
+    });
+  });
+
   group('CardMatchCandidate.confidence', () {
     test('an ordinary printing is credited for a border match', () {
       final c = CardMatchCandidate(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/backup_service.dart';
+import '../data/card_matcher.dart';
 import '../data/card_repository.dart';
 import '../data/collection_repository.dart';
 import '../data/db.dart';
@@ -154,4 +155,12 @@ final distinctCardNamesProvider = FutureProvider<List<String>>((ref) {
 final namesInSetProvider = FutureProvider.family<List<String>, String>((ref, setId) async {
   final cards = await ref.watch(cardRepositoryProvider).cardsInSet(setId);
   return cards.map((c) => c.name).toSet().toList();
+});
+
+/// Cached for the lifetime of the app -- lets the scanner recognize an OCR'd
+/// read of a card's franchise banner text (see propertyLogoFragments) for
+/// what it is.
+final propertyLogoFragmentsProvider = FutureProvider<List<String>>((ref) async {
+  final logos = await ref.watch(cardRepositoryProvider).distinctPropertyLogos();
+  return propertyLogoFragments(logos);
 });

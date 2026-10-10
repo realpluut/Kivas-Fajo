@@ -148,6 +148,50 @@ final _classificationStampPattern = RegExp(r'^(science|medical|security|engineer
 /// from being treated as a title on its own.
 bool isClassificationStampLine(String line) => _classificationStampPattern.hasMatch(line.trim());
 
+/// Breaks each property-logo string on record (e.g. "Star Trek: The Next
+/// Generation", "Star Trek II: The Wrath of Khan") into the pieces the
+/// physical card actually prints as separate banner lines -- "Star Trek"
+/// (or "Star Trek II" for the numbered films) plus whatever follows the
+/// colon -- so a garbled OCR read of just one of those lines (see
+/// _looksLikePropertyLogoLine) can still be recognized without needing the
+/// whole banner to have been read back as a single line.
+List<String> propertyLogoFragments(Iterable<String> propertyLogos) {
+  final fragments = <String>{'Star Trek'};
+  for (final logo in propertyLogos) {
+    final colon = logo.indexOf(':');
+    if (colon == -1) {
+      fragments.add(logo);
+      continue;
+    }
+    fragments.add(logo.substring(0, colon).trim());
+    fragments.add(logo.substring(colon + 1).trim());
+  }
+  return fragments.toList();
+}
+
+/// True when [line] is a strong fuzzy match for one of [propertyLogoFragments]
+/// -- the show/movie banner text printed on every card ("Star Trek", "The
+/// Next Generation", "Deep Space Nine", ...) -- rather than a card's own
+/// title. Built from the property logos actually in the database instead of
+/// a fixed list (Decipher's wording varies, and scrape typos like "Star
+/// Trek: Yoyager" happen), and checked with the same fuzzy scoring as real
+/// candidate matching rather than an exact/regex check, because OCR garbles
+/// this stylized banner text unpredictably -- an exact exclusion list keeps
+/// missing new garbled variants (see bestMatches' doc comment on why a
+/// franchise-logo exclusion list was dropped in favor of the length-ratio
+/// gate in the first place).
+bool looksLikePropertyLogoLine(String line, List<String> propertyLogoFragments) {
+  if (propertyLogoFragments.isEmpty) return false;
+  return bestMatches<String>(
+    ocrLines: [line],
+    candidates: propertyLogoFragments,
+    nameOf: (f) => f,
+    minScore: 0.6,
+    minLengthRatio: 0.6,
+    limit: 1,
+  ).isNotEmpty;
+}
+
 /// True for an Errata-rarity printing ("Physical Errata", "Virtual Errata",
 /// bare "Errata", and scrape typos like "Pgtsical Errata" -- matches on the
 /// "errata" substring rather than the exact string for that reason). These
@@ -228,6 +272,11 @@ Future<CardMatchResult> matchCardFromOcr({
   RecognizedText? rotatedRecognized,
   required CardRepository repo,
   required List<String> names,
+  // Used to recognize an OCR'd read of a card's franchise banner text (see
+  // propertyLogoFragments) so it can't masquerade as a false title match --
+  // see the comment where this is used, below. Optional since not every
+  // caller has it to offer; matching just loses that extra safety net.
+  List<String> propertyLogoFragments = const [],
   String? detectedBorderColor,
   List<double> cornerLuminance = const [],
   // When set, only printings from this set are considered at all -- both
@@ -276,14 +325,36 @@ Future<CardMatchResult> matchCardFromOcr({
   // never have been vulnerable to. Gating this behind "nothing else
   // matched" keeps the split-title fix for the cards that actually need
   // it without opening that door for every other card.
-  if (matches.isEmpty) {
+  //
+  // One more condition reopens that gate even when something *did* match:
+  // a garbled read of the franchise banner can itself coincidentally clear
+  // minScore against an unrelated real card -- an Outpost's "Star Trek:
+  // The Next Generation" logo, misread as "THE NEXT GENERATIDN", scores
+  // 0.59 against the real card "The Next Emanation", which shares its
+  // "The Next ___" opening. That's a real single-line match (so the
+  // isEmpty check alone lets it through), but a weak, coincidental one,
+  // from a line that's provably banner text, not a title -- so it's
+  // treated the same as finding nothing: pairing still gets a chance, and
+  // the two pools compete on score below rather than pairing being
+  // skipped outright. The 0.85 floor keeps this from ever firing on a
+  // genuine, cleanly-read match -- including the handful of real cards
+  // whose own title *is* a franchise name ("Voyager", "Enterprise",
+  // "Deep Space Nine", ...), which score far above it against their own
+  // exact name.
+  final topIsWeakLogoMatch = matches.isNotEmpty &&
+      matches.first.score < 0.85 &&
+      looksLikePropertyLogoLine(matches.first.matchedLine, propertyLogoFragments);
+  if (matches.isEmpty || topIsWeakLogoMatch) {
     // Even in the fallback, a classification stamp never belongs in a
     // pair -- it's not a piece of a split title the way "Romulan" and
     // "OUTPOST" are, just a word that happens to prefix-match unrelated
     // real cards (see isClassificationStampLine).
     final pairableLines = [for (final l in lines) if (!isClassificationStampLine(l)) l];
     final pairedLines = [...lines, ...shortLinePairs(pairableLines)];
-    matches = bestMatches<String>(ocrLines: pairedLines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
+    final pairedMatches = bestMatches<String>(ocrLines: pairedLines, candidates: names, nameOf: (n) => n, minScore: 0.55, limit: 3);
+    matches = matches.isEmpty
+        ? pairedMatches
+        : ([...matches, ...pairedMatches]..sort((a, b) => b.score.compareTo(a.score))).take(3).toList();
   }
   if (matches.isEmpty) {
     return CardMatchResult(

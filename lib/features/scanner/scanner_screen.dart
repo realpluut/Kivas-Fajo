@@ -291,11 +291,13 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       final borderSample = await sampleBorder(path);
       _borderDebug = borderSample.debug;
       final names = await ref.read(distinctCardNamesProvider.future);
+      final propertyLogoFragments = await ref.read(propertyLogoFragmentsProvider.future);
       final result = await matchCardFromOcr(
         recognized: recognized,
         rotatedRecognized: rotatedRecognized,
         repo: ref.read(cardRepositoryProvider),
         names: names,
+        propertyLogoFragments: propertyLogoFragments,
         detectedBorderColor: borderSample.color,
         cornerLuminance: borderSample.cornerLuminance,
       );
