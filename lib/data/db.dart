@@ -9,7 +9,21 @@ import 'models/trek_card.dart';
 
 /// Bump this whenever assets/sets.json or assets/cards.json are regenerated
 /// with a meaningfully different shape/content, so existing installs reseed.
-const int kCurrentDataVersion = 13;
+///
+/// Missing this is a real, user-visible failure mode, not just a missed
+/// optimization: _seedIfNeeded only touches the cards/sets tables when this
+/// changes, so a device already seeded at the old value silently keeps its
+/// stale rows forever, no matter how many newer builds get installed over
+/// it -- wrong images (old/missing image_url), wrong set membership (a
+/// card-list parsing fix never arrives), wrong collection counts (owned
+/// entries recorded against ids a set's card list no longer has) -- while
+/// collection_entries itself, which _seedIfNeeded never touches, is fine
+/// the whole time. Three data commits (restoring Starter Deck II Reprints
+/// and fixing card-list parsing bugs, normalizing card type capitalization,
+/// distinguishing Q-Continuum's two Amanda's Parents printings) shipped
+/// after 13 without this being bumped, so already-seeded installs never
+/// picked any of them up.
+const int kCurrentDataVersion = 14;
 
 class AppDatabase {
   AppDatabase._();
