@@ -23,7 +23,13 @@ import 'models/trek_card.dart';
 /// distinguishing Q-Continuum's two Amanda's Parents printings) shipped
 /// after 13 without this being bumped, so already-seeded installs never
 /// picked any of them up.
-const int kCurrentDataVersion = 14;
+///
+/// Also the only occasion _seedIfNeeded's orphaned-entry cleanup (see
+/// below) gets to run on an already-seeded device -- a user with owned
+/// entries recorded against ids from an older catalog (promo/coupon cards
+/// later dropped, e.g.) needs this bumped, with no cards.json change
+/// required, just to clear them out.
+const int kCurrentDataVersion = 15;
 
 class AppDatabase {
   AppDatabase._();
@@ -147,6 +153,18 @@ class AppDatabase {
         }
         await cardsBatch.commit(noResult: true);
       }
+
+      // A collection_entries row can outlive the card it was recorded
+      // against -- a promo/coupon card dropped from the catalog, or an id
+      // renamed by a scraper fix -- and since every card list screen joins
+      // against the freshly-reseeded cards table above, an orphaned row is
+      // invisible there: nothing to tap to un-own it, it just silently
+      // inflates the raw export (see BackupService.buildExportFile's own
+      // unjoined SELECT). Safe to run unconditionally here: by this point
+      // in the transaction cards has already been fully repopulated from
+      // the current catalog, so "not in cards" means genuinely gone, never
+      // a card merely not reseeded yet.
+      await txn.delete('collection_entries', where: 'card_id NOT IN (SELECT id FROM cards)');
 
       await txn.insert(
         'meta',
