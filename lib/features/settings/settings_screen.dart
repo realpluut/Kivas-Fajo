@@ -17,9 +17,16 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _export(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
+    // iOS presents the share sheet as a popover anchored to this rect --
+    // without it, share_plus throws PlatformException("sharePositionOrigin:
+    // argument must be set") outright rather than just mis-anchoring the
+    // popover, so it's required here, not just an iPad nicety. Grabbed
+    // before the export's await so context is still definitely mounted.
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
     try {
       final file = await ref.read(backupServiceProvider).buildExportFile();
-      await Share.shareXFiles([XFile(file.path)], subject: 'Kivas Fajo collection backup');
+      await Share.shareXFiles([XFile(file.path)], subject: 'Kivas Fajo collection backup', sharePositionOrigin: origin);
     } catch (e) {
       if (!context.mounted) return;
       messenger.showSnackBar(SnackBar(content: Text('Could not export: $e')));
